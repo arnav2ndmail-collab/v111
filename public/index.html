@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quizrr - JEE/NEET Analytics</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #141927;
+            --bg-tertiary: #1a2234;
+            --text-primary: #ffffff;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-blue: #6366f1;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-orange: #f97316;
+            --accent-cyan: #06b6d4;
+            --accent-purple: #8b5cf6;
+            --border-color: #2d3748;
+            --hover-bg: #1e293b;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* Auth Container */
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .auth-box {
+            background: var(--bg-secondary);
+            padding: 48px;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 440px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .auth-logo {
+            width: 72px;
+            height: 72px;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            font-weight: 700;
+            color: white;
+            margin: 0 auto 24px;
+        }
+
+        .auth-title {
+            font-size: 28px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .auth-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 15px;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            background: var(--bg-primary);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 8px;
+        }
+
+        .btn-primary {
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5558e3;
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .auth-switch {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .auth-link {
+            color: var(--accent-blue);
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .auth-link:hover {
+            text-decoration: underline;
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--accent-red);
+            color: var(--accent-red);
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .success-message {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--accent-green);
+            color: var(--accent-green);
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        /* Dashboard Styles */
+        .hidden {
+            display: none !important;
+        }
+
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 90px;
+            height: 100vh;
+            background-color: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 0;
+            z-index: 100;
+        }
+
+        .logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+            font-size: 24px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .logo-text {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            margin-bottom: 32px;
+        }
+
+        .nav-item {
+            width: 64px;
+            height: 64px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            cursor: pointer;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .nav-item:hover {
+            background-color: var(--hover-bg);
+        }
+
+        .nav-item.active {
+            background-color: var(--bg-tertiary);
+        }
+
+        .nav-item.active::before {
+            content: '';
+            position: absolute;
+            left: -18px;
+            width: 3px;
+            height: 32px;
+            background-color: var(--accent-blue);
+            border-radius: 0 2px 2px 0;
+        }
+
+        .nav-icon {
+            width: 24px;
+            height: 24px;
+            stroke: var(--text-secondary);
+        }
+
+        .nav-item.active .nav-icon {
+            stroke: var(--text-primary);
+        }
+
+        .nav-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .nav-item.active .nav-label {
+            color: var(--text-primary);
+        }
+
+        .logout-btn {
+            margin-top: auto;
+            width: 64px;
+            height: 48px;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-secondary);
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: var(--accent-red);
+            border-color: var(--accent-red);
+            color: white;
+        }
+
+        .test-series-selector-container {
+            margin-bottom: 24px;
+            width: 64px;
+        }
+
+        .test-series-selector {
+            width: 100%;
+            height: 80px;
+            background-color: #10b981;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            gap: 4px;
+            border: 2px solid #10b981;
+            position: relative;
+        }
+
+        .test-series-icon {
+            width: 28px;
+            height: 28px;
+            fill: white;
+        }
+
+        .test-series-label {
+            font-size: 9px;
+            font-weight: 700;
+            color: white;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        .test-series-dropdown {
+            position: absolute;
+            left: 100%;
+            top: 0;
+            margin-left: 12px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 8px;
+            min-width: 280px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+        }
+
+        .test-series-option {
+            padding: 12px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 4px;
+        }
+
+        .test-series-option:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .test-series-option.active {
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        .test-series-option-name {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .test-series-option-meta {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .main-content {
+            margin-left: 90px;
+            padding: 32px;
+            min-height: 100vh;
+        }
+
+        .left-panel {
+            max-width: 480px;
+            margin-bottom: 32px;
+        }
+
+        .pack-selector {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--accent-blue);
+            border-radius: 12px;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 32px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .pack-selector:hover {
+            background-color: var(--bg-tertiary);
+        }
+
+        .pack-label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .pack-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            line-height: 1.3;
+        }
+
+        .pack-subtitle {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .analysis-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 32px;
+        }
+
+        .analysis-item {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 18px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .analysis-item:hover {
+            background-color: var(--bg-tertiary);
+            border-color: var(--accent-blue);
+        }
+
+        .analysis-item.active {
+            background-color: var(--bg-tertiary);
+            border-color: var(--accent-blue);
+        }
+
+        .analysis-item-content {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .analysis-icon {
+            width: 20px;
+            height: 20px;
+            stroke: var(--text-secondary);
+        }
+
+        .analysis-item.active .analysis-icon {
+            stroke: var(--accent-blue);
+        }
+
+        .analysis-label {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .content-header {
+            margin-bottom: 24px;
+        }
+
+        .content-title {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 24px;
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 32px;
+        }
+
+        .filter-tab {
+            padding: 10px 20px;
+            border-radius: 24px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .filter-tab.active {
+            background-color: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: white;
+        }
+
+        .filter-tab:hover:not(.active) {
+            background-color: var(--bg-tertiary);
+        }
+
+        .performance-card {
+            background-color: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 32px;
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 24px;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 24px;
+        }
+
+        .summary-item {
+            text-align: center;
+        }
+
+        .summary-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .summary-value {
+            font-size: 32px;
+            font-weight: 700;
+        }
+
+        .summary-bar {
+            height: 6px;
+            background-color: var(--bg-tertiary);
+            border-radius: 3px;
+            margin-top: 12px;
+            overflow: hidden;
+        }
+
+        .summary-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.6s ease;
+        }
+
+        .subject-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+
+        .subject-card {
+            background-color: var(--bg-tertiary);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .subject-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .subject-name {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .test-table {
+            width: 100%;
+            background-color: var(--bg-secondary);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .table-header {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;
+            gap: 16px;
+            padding: 18px 24px;
+            background-color: var(--bg-tertiary);
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+        }
+
+        .table-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;
+            gap: 16px;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+            transition: all 0.2s;
+        }
+
+        .table-row:hover {
+            background-color: var(--hover-bg);
+        }
+
+        .table-row:last-child {
+            border-bottom: none;
+        }
+
+        .test-name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .test-date {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .stat-max {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        .stat-bar {
+            height: 48px;
+            width: 4px;
+            background: linear-gradient(to bottom, var(--color), transparent);
+            border-radius: 2px;
+            margin-left: 4px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid var(--bg-tertiary);
+            border-top-color: var(--accent-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-in {
+            animation: fadeInUp 0.5s ease forwards;
+        }
+    </style>
+</head>
+<body>
+    <!-- Auth Screen -->
+    <div id="authScreen" class="auth-container">
+        <div class="auth-box">
+            <div class="auth-logo">Q</div>
+            
+            <!-- Login Form -->
+            <div id="loginForm">
+                <h2 class="auth-title">Welcome Back</h2>
+                <p class="auth-subtitle">Sign in to access your test analytics</p>
+                
+                <div id="loginError" class="error-message hidden"></div>
+                
+                <form onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-input" id="loginEmail" required placeholder="your@email.com">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-input" id="loginPassword" required placeholder="••••••••">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" id="loginBtn">Sign In</button>
+                </form>
+                
+                <div class="auth-switch">
+                    Don't have an account? <span class="auth-link" onclick="showRegisterForm()">Sign up</span>
+                </div>
+            </div>
+            
+            <!-- Register Form -->
+            <div id="registerForm" class="hidden">
+                <h2 class="auth-title">Create Account</h2>
+                <p class="auth-subtitle">Start tracking your test performance</p>
+                
+                <div id="registerError" class="error-message hidden"></div>
+                <div id="registerSuccess" class="success-message hidden"></div>
+                
+                <form onsubmit="handleRegister(event)">
+                    <div class="form-group">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" class="form-input" id="registerName" required placeholder="John Doe">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-input" id="registerEmail" required placeholder="your@email.com">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Phone (Optional)</label>
+                        <input type="tel" class="form-input" id="registerPhone" placeholder="+91 98765 43210">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-input" id="registerPassword" required placeholder="••••••••" minlength="6">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" id="registerBtn">Create Account</button>
+                </form>
+                
+                <div class="auth-switch">
+                    Already have an account? <span class="auth-link" onclick="showLoginForm()">Sign in</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Screen -->
+    <div id="dashboardScreen" class="hidden">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">Q</div>
+            <div class="logo-text">Quizrr</div>
+
+            <div class="nav-item active">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+                <span class="nav-label">Home</span>
+            </div>
+
+            <div class="nav-item">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                </svg>
+                <span class="nav-label">All Tests</span>
+            </div>
+
+            <div class="nav-item">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="20" x2="12" y2="10"/>
+                    <line x1="18" y1="20" x2="18" y2="4"/>
+                    <line x1="6" y1="20" x2="6" y2="16"/>
+                </svg>
+                <span class="nav-label">Analysis</span>
+            </div>
+
+            <div class="test-series-selector-container">
+                <div class="test-series-selector" onclick="toggleSeriesDropdown()">
+                    <svg class="test-series-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/>
+                    </svg>
+                    <div class="test-series-label" id="currentSeriesName">JEE Main<br>2026</div>
+                </div>
+                <div id="seriesDropdown" class="test-series-dropdown hidden"></div>
+            </div>
+
+            <button class="logout-btn" onclick="handleLogout()">Logout</button>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div id="dashboardContent">
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading your analytics...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API Configuration
+        const API_URL = 'http://localhost:3000/api'; // Change this to your deployed backend URL
+        
+        let currentUser = null;
+        let currentSeries = null;
+        let allSeries = [];
+        let userAttempts = [];
+
+        // Check if user is logged in on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('token');
+            if (token) {
+                verifyToken(token);
+            }
+        });
+
+        // Verify token and load user data
+        async function verifyToken(token) {
+            try {
+                const response = await fetch(`${API_URL}/auth/me`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    currentUser = data.user;
+                    showDashboard();
+                    loadTestSeries();
+                } else {
+                    localStorage.removeItem('token');
+                    showAuthScreen();
+                }
+            } catch (error) {
+                console.error('Token verification error:', error);
+                localStorage.removeItem('token');
+                showAuthScreen();
+            }
+        }
+
+        // Show/Hide Forms
+        function showLoginForm() {
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('registerForm').classList.add('hidden');
+        }
+
+        function showRegisterForm() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('registerForm').classList.remove('hidden');
+        }
+
+        function showAuthScreen() {
+            document.getElementById('authScreen').classList.remove('hidden');
+            document.getElementById('dashboardScreen').classList.add('hidden');
+        }
+
+        function showDashboard() {
+            document.getElementById('authScreen').classList.add('hidden');
+            document.getElementById('dashboardScreen').classList.remove('hidden');
+        }
+
+        // Handle Login
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const errorDiv = document.getElementById('loginError');
+            const loginBtn = document.getElementById('loginBtn');
+
+            errorDiv.classList.add('hidden');
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Signing in...';
+
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem('token', data.token);
+                    currentUser = data.user;
+                    showDashboard();
+                    loadTestSeries();
+                } else {
+                    errorDiv.textContent = data.error || 'Login failed';
+                    errorDiv.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                errorDiv.textContent = 'Network error. Please try again.';
+                errorDiv.classList.remove('hidden');
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Sign In';
+            }
+        }
+
+        // Handle Register
+        async function handleRegister(event) {
+            event.preventDefault();
+            
+            const full_name = document.getElementById('registerName').value;
+            const email = document.getElementById('registerEmail').value;
+            const phone = document.getElementById('registerPhone').value;
+            const password = document.getElementById('registerPassword').value;
+            const errorDiv = document.getElementById('registerError');
+            const successDiv = document.getElementById('registerSuccess');
+            const registerBtn = document.getElementById('registerBtn');
+
+            errorDiv.classList.add('hidden');
+            successDiv.classList.add('hidden');
+            registerBtn.disabled = true;
+            registerBtn.textContent = 'Creating account...';
+
+            try {
+                const response = await fetch(`${API_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password, full_name, phone })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem('token', data.token);
+                    currentUser = data.user;
+                    successDiv.textContent = 'Account created successfully! Redirecting...';
+                    successDiv.classList.remove('hidden');
+                    
+                    setTimeout(() => {
+                        showDashboard();
+                        loadTestSeries();
+                    }, 1500);
+                } else {
+                    errorDiv.textContent = data.error || 'Registration failed';
+                    errorDiv.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Registration error:', error);
+                errorDiv.textContent = 'Network error. Please try again.';
+                errorDiv.classList.remove('hidden');
+            } finally {
+                registerBtn.disabled = false;
+                registerBtn.textContent = 'Create Account';
+            }
+        }
+
+        // Handle Logout
+        function handleLogout() {
+            localStorage.removeItem('token');
+            currentUser = null;
+            currentSeries = null;
+            showAuthScreen();
+            showLoginForm();
+        }
+
+        // Load Test Series
+        async function loadTestSeries() {
+            try {
+                const response = await fetch(`${API_URL}/test-series`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                const data = await response.json();
+                allSeries = data.testSeries;
+                
+                if (allSeries.length > 0) {
+                    currentSeries = allSeries[0];
+                    updateSeriesDropdown();
+                    loadUserAttempts();
+                }
+            } catch (error) {
+                console.error('Load test series error:', error);
+            }
+        }
+
+        // Update Series Dropdown
+        function updateSeriesDropdown() {
+            const dropdown = document.getElementById('seriesDropdown');
+            dropdown.innerHTML = allSeries.map(series => `
+                <div class="test-series-option ${series.id === currentSeries.id ? 'active' : ''}" 
+                     onclick="selectSeries('${series.id}')">
+                    <div class="test-series-option-name">${series.name}</div>
+                    <div class="test-series-option-meta">${series.exam_type} • ${series.total_tests} tests</div>
+                </div>
+            `).join('');
+
+            // Update current series name
+            const seriesNameParts = currentSeries.name.split(' ');
+            const examType = seriesNameParts[0] + ' ' + seriesNameParts[1];
+            const year = seriesNameParts[2];
+            document.getElementById('currentSeriesName').innerHTML = `${examType}<br>${year}`;
+        }
+
+        // Toggle Series Dropdown
+        function toggleSeriesDropdown() {
+            const dropdown = document.getElementById('seriesDropdown');
+            dropdown.classList.toggle('hidden');
+        }
+
+        // Select Series
+        function selectSeries(seriesId) {
+            currentSeries = allSeries.find(s => s.id === seriesId);
+            updateSeriesDropdown();
+            toggleSeriesDropdown();
+            loadUserAttempts();
+        }
+
+        // Load User Attempts
+        async function loadUserAttempts() {
+            const contentDiv = document.getElementById('dashboardContent');
+            contentDiv.innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading your test results...</p>
+                </div>
+            `;
+
+            try {
+                const response = await fetch(`${API_URL}/test-series/${currentSeries.id}/my-attempts`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                const data = await response.json();
+                userAttempts = data.attempts || [];
+                
+                renderDashboard();
+            } catch (error) {
+                console.error('Load attempts error:', error);
+                contentDiv.innerHTML = `
+                    <div class="loading">
+                        <p style="color: var(--accent-red);">Failed to load data. Please refresh the page.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Render Dashboard
+        function renderDashboard() {
+            const contentDiv = document.getElementById('dashboardContent');
+            
+            if (userAttempts.length === 0) {
+                contentDiv.innerHTML = `
+                    <div class="loading">
+                        <p>No test attempts found for this series.</p>
+                        <p style="margin-top: 12px; color: var(--text-muted);">Start taking tests to see your analytics here!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Calculate summary stats
+            const totalAttempts = userAttempts.length;
+            const avgScore = (userAttempts.reduce((sum, a) => sum + a.total_score, 0) / totalAttempts / 300 * 100).toFixed(0);
+            const avgCorrect = (userAttempts.reduce((sum, a) => sum + a.attempted_correct, 0) / totalAttempts / 75 * 100).toFixed(0);
+            const avgWrong = (userAttempts.reduce((sum, a) => sum + a.attempted_wrong, 0) / totalAttempts / 75 * 100).toFixed(0);
+            const avgNotAttempted = (userAttempts.reduce((sum, a) => sum + a.not_attempted, 0) / totalAttempts / 75 * 100).toFixed(0);
+            const avgNotVisited = (userAttempts.reduce((sum, a) => sum + a.not_visited, 0) / totalAttempts / 75 * 100).toFixed(0);
+
+            // Calculate subject averages
+            const physicsAvg = userAttempts.filter(a => a.physics_score !== null).length > 0
+                ? (userAttempts.reduce((sum, a) => sum + (a.physics_score || 0), 0) / userAttempts.filter(a => a.physics_score !== null).length / 100 * 100).toFixed(0)
+                : 0;
+            const chemistryAvg = userAttempts.filter(a => a.chemistry_score !== null).length > 0
+                ? (userAttempts.reduce((sum, a) => sum + (a.chemistry_score || 0), 0) / userAttempts.filter(a => a.chemistry_score !== null).length / 100 * 100).toFixed(0)
+                : 0;
+            const mathAvg = userAttempts.filter(a => a.mathematics_score !== null).length > 0
+                ? (userAttempts.reduce((sum, a) => sum + (a.mathematics_score || 0), 0) / userAttempts.filter(a => a.mathematics_score !== null).length / 100 * 100).toFixed(0)
+                : 0;
+
+            contentDiv.innerHTML = `
+                <div style="display: flex; gap: 32px;">
+                    <div class="left-panel">
+                        <div class="pack-selector">
+                            <div class="pack-label">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                                </svg>
+                                All Quizrr Mock Test
+                            </div>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9"/>
+                            </svg>
+                        </div>
+
+                        <div class="pack-title">${currentSeries.name}</div>
+                        <div class="pack-subtitle">${totalAttempts} tests attempted</div>
+
+                        <div class="analysis-menu">
+                            <div class="analysis-item active">
+                                <div class="analysis-item-content">
+                                    <svg class="analysis-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="12" y1="20" x2="12" y2="10"/>
+                                        <line x1="18" y1="20" x2="18" y2="4"/>
+                                        <line x1="6" y1="20" x2="6" y2="16"/>
+                                    </svg>
+                                    <span class="analysis-label">Performance</span>
+                                </div>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="9 18 15 12 9 6"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="flex: 1;">
+                        <div class="content-header">
+                            <h1 class="content-title">Performance</h1>
+                            
+                            <div class="filter-tabs">
+                                <div class="filter-tab active">All Tests</div>
+                                <div class="filter-tab">Last 3 Tests</div>
+                                <div class="filter-tab">Last 5 Tests</div>
+                                <div class="filter-tab">Last 10 Tests</div>
+                            </div>
+                        </div>
+
+                        <div class="performance-card animate-in">
+                            <h3 class="section-title">Summary</h3>
+                            
+                            <div class="summary-grid">
+                                <div class="summary-item">
+                                    <div class="summary-label">Average Score</div>
+                                    <div class="summary-value" style="color: #f59e0b;">${avgScore}%</div>
+                                    <div class="summary-bar">
+                                        <div class="summary-bar-fill" style="width: ${avgScore}%; background: linear-gradient(90deg, #f59e0b, #fbbf24);"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="summary-item">
+                                    <div class="summary-label">Attempted Correct</div>
+                                    <div class="summary-value" style="color: #10b981;">${avgCorrect}%</div>
+                                    <div class="summary-bar">
+                                        <div class="summary-bar-fill" style="width: ${avgCorrect}%; background: linear-gradient(90deg, #10b981, #34d399);"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="summary-item">
+                                    <div class="summary-label">Attempted Wrong</div>
+                                    <div class="summary-value" style="color: #ef4444;">${avgWrong}%</div>
+                                    <div class="summary-bar">
+                                        <div class="summary-bar-fill" style="width: ${avgWrong}%; background: linear-gradient(90deg, #ef4444, #f87171);"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="summary-item">
+                                    <div class="summary-label">Not Attempted</div>
+                                    <div class="summary-value" style="color: #6366f1;">${avgNotAttempted}%</div>
+                                    <div class="summary-bar">
+                                        <div class="summary-bar-fill" style="width: ${avgNotAttempted}%; background: linear-gradient(90deg, #6366f1, #818cf8);"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="summary-item">
+                                    <div class="summary-label">Not Visited Qs</div>
+                                    <div class="summary-value" style="color: #64748b;">${avgNotVisited}%</div>
+                                    <div class="summary-bar">
+                                        <div class="summary-bar-fill" style="width: ${avgNotVisited}%; background: linear-gradient(90deg, #64748b, #94a3b8);"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="performance-card animate-in" style="animation-delay: 0.1s;">
+                            <div class="subject-grid">
+                                <div class="subject-card">
+                                    <div class="subject-header">
+                                        <span style="color: #6366f1; font-size: 18px;">✓</span>
+                                        <span class="subject-name">Overall</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <div class="summary-label">Avg Score</div>
+                                        <div class="summary-value" style="color: #f59e0b; font-size: 24px;">${avgScore}%</div>
+                                    </div>
+                                </div>
+
+                                <div class="subject-card">
+                                    <div class="subject-header">
+                                        <span style="color: #06b6d4; font-size: 18px;">∑</span>
+                                        <span class="subject-name">Mathematics</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <div class="summary-label">Avg Score</div>
+                                        <div class="summary-value" style="color: #f59e0b; font-size: 24px;">${mathAvg}%</div>
+                                    </div>
+                                </div>
+
+                                <div class="subject-card">
+                                    <div class="subject-header">
+                                        <span style="color: #10b981; font-size: 18px;">⚛</span>
+                                        <span class="subject-name">Physics</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <div class="summary-label">Avg Score</div>
+                                        <div class="summary-value" style="color: #f59e0b; font-size: 24px;">${physicsAvg}%</div>
+                                    </div>
+                                </div>
+
+                                <div class="subject-card">
+                                    <div class="subject-header">
+                                        <span style="color: #f97316; font-size: 18px;">🧪</span>
+                                        <span class="subject-name">Chemistry</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <div class="summary-label">Avg Score</div>
+                                        <div class="summary-value" style="color: #f59e0b; font-size: 24px;">${chemistryAvg}%</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="animate-in" style="animation-delay: 0.2s;">
+                            <h3 class="section-title">Test-wise Breakdown</h3>
+
+                            <div class="test-table">
+                                <div class="table-header">
+                                    <div>Test Title</div>
+                                    <div>Total Score</div>
+                                    <div>Attempted Correct</div>
+                                    <div>Attempted Wrong</div>
+                                    <div>Not Attempted</div>
+                                    <div>Not Visited Qs</div>
+                                </div>
+
+                                ${userAttempts.map(attempt => {
+                                    const testName = attempt.tests?.name || 'Test';
+                                    const testDate = attempt.tests?.test_date ? new Date(attempt.tests.test_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+                                    
+                                    return `
+                                        <div class="table-row">
+                                            <div>
+                                                <div class="test-name">${testName}</div>
+                                                <div class="test-date">${testDate}</div>
+                                            </div>
+                                            <div class="stat-value" style="color: #f59e0b;">
+                                                ${attempt.total_score}<span class="stat-max">/ 300</span>
+                                                <div class="stat-bar" style="--color: #f59e0b; height: ${attempt.total_score / 300 * 100}px;"></div>
+                                            </div>
+                                            <div class="stat-value" style="color: #10b981;">
+                                                ${attempt.attempted_correct}<span class="stat-max">/ 75</span>
+                                                <div class="stat-bar" style="--color: #10b981; height: ${attempt.attempted_correct / 75 * 100}px;"></div>
+                                            </div>
+                                            <div class="stat-value" style="color: #ef4444;">
+                                                ${attempt.attempted_wrong}<span class="stat-max">/ 75</span>
+                                                <div class="stat-bar" style="--color: #ef4444; height: ${attempt.attempted_wrong / 75 * 100}px;"></div>
+                                            </div>
+                                            <div class="stat-value" style="color: #6366f1;">
+                                                ${attempt.not_attempted}<span class="stat-max">/ 75</span>
+                                                <div class="stat-bar" style="--color: #6366f1; height: ${attempt.not_attempted / 75 * 100}px;"></div>
+                                            </div>
+                                            <div class="stat-value" style="color: #64748b;">
+                                                ${attempt.not_visited}<span class="stat-max">/ 75</span>
+                                                <div class="stat-bar" style="--color: #64748b; height: ${attempt.not_visited / 75 * 100}px;"></div>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            const dropdown = document.getElementById('seriesDropdown');
+            const selector = document.querySelector('.test-series-selector');
+            
+            if (dropdown && selector && !dropdown.contains(e.target) && !selector.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
