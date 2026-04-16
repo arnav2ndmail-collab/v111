@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quizrr - JEE/NEET Analytics</title>
+    <title>Quizrr Analytics</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
             margin: 0;
@@ -23,8 +24,6 @@
             --accent-green: #10b981;
             --accent-red: #ef4444;
             --accent-orange: #f97316;
-            --accent-cyan: #06b6d4;
-            --accent-purple: #8b5cf6;
             --border-color: #2d3748;
             --hover-bg: #1e293b;
         }
@@ -36,7 +35,6 @@
             line-height: 1.6;
         }
 
-        /* Auth Container */
         .auth-container {
             min-height: 100vh;
             display: flex;
@@ -129,7 +127,7 @@
             color: white;
         }
 
-        .btn-primary:hover {
+        .btn-primary:hover:not(:disabled) {
             background: #5558e3;
             transform: translateY(-1px);
         }
@@ -137,7 +135,6 @@
         .btn-primary:disabled {
             opacity: 0.6;
             cursor: not-allowed;
-            transform: none;
         }
 
         .auth-switch {
@@ -177,7 +174,6 @@
             font-size: 14px;
         }
 
-        /* Dashboard Styles */
         .hidden {
             display: none !important;
         }
@@ -251,16 +247,6 @@
             border-radius: 0 2px 2px 0;
         }
 
-        .nav-icon {
-            width: 24px;
-            height: 24px;
-            stroke: var(--text-secondary);
-        }
-
-        .nav-item.active .nav-icon {
-            stroke: var(--text-primary);
-        }
-
         .nav-label {
             font-size: 11px;
             color: var(--text-secondary);
@@ -290,13 +276,8 @@
             color: white;
         }
 
-        .test-series-selector-container {
-            margin-bottom: 24px;
-            width: 64px;
-        }
-
         .test-series-selector {
-            width: 100%;
+            width: 64px;
             height: 80px;
             background-color: #10b981;
             border-radius: 12px;
@@ -307,13 +288,7 @@
             cursor: pointer;
             gap: 4px;
             border: 2px solid #10b981;
-            position: relative;
-        }
-
-        .test-series-icon {
-            width: 28px;
-            height: 28px;
-            fill: white;
+            margin-bottom: 24px;
         }
 
         .test-series-label {
@@ -324,185 +299,10 @@
             line-height: 1.2;
         }
 
-        .test-series-dropdown {
-            position: absolute;
-            left: 100%;
-            top: 0;
-            margin-left: 12px;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 8px;
-            min-width: 280px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            z-index: 1000;
-        }
-
-        .test-series-option {
-            padding: 12px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-bottom: 4px;
-        }
-
-        .test-series-option:hover {
-            background: var(--bg-tertiary);
-        }
-
-        .test-series-option.active {
-            background: var(--accent-blue);
-            color: white;
-        }
-
-        .test-series-option-name {
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        .test-series-option-meta {
-            font-size: 11px;
-            color: var(--text-muted);
-        }
-
         .main-content {
             margin-left: 90px;
             padding: 32px;
             min-height: 100vh;
-        }
-
-        .left-panel {
-            max-width: 480px;
-            margin-bottom: 32px;
-        }
-
-        .pack-selector {
-            background-color: var(--bg-secondary);
-            border: 1px solid var(--accent-blue);
-            border-radius: 12px;
-            padding: 16px 24px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 32px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .pack-selector:hover {
-            background-color: var(--bg-tertiary);
-        }
-
-        .pack-label {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            color: var(--text-primary);
-            font-weight: 600;
-            font-size: 15px;
-        }
-
-        .pack-title {
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            line-height: 1.3;
-        }
-
-        .pack-subtitle {
-            font-size: 20px;
-            font-weight: 600;
-            color: var(--text-secondary);
-        }
-
-        .analysis-menu {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-top: 32px;
-        }
-
-        .analysis-item {
-            background-color: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 18px 24px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .analysis-item:hover {
-            background-color: var(--bg-tertiary);
-            border-color: var(--accent-blue);
-        }
-
-        .analysis-item.active {
-            background-color: var(--bg-tertiary);
-            border-color: var(--accent-blue);
-        }
-
-        .analysis-item-content {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .analysis-icon {
-            width: 20px;
-            height: 20px;
-            stroke: var(--text-secondary);
-        }
-
-        .analysis-item.active .analysis-icon {
-            stroke: var(--accent-blue);
-        }
-
-        .analysis-label {
-            font-size: 15px;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .content-header {
-            margin-bottom: 24px;
-        }
-
-        .content-title {
-            font-size: 36px;
-            font-weight: 700;
-            margin-bottom: 24px;
-        }
-
-        .filter-tabs {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 32px;
-        }
-
-        .filter-tab {
-            padding: 10px 20px;
-            border-radius: 24px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            background-color: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            color: var(--text-secondary);
-        }
-
-        .filter-tab.active {
-            background-color: var(--accent-blue);
-            border-color: var(--accent-blue);
-            color: white;
-        }
-
-        .filter-tab:hover:not(.active) {
-            background-color: var(--bg-tertiary);
         }
 
         .performance-card {
@@ -556,29 +356,24 @@
             transition: width 0.6s ease;
         }
 
-        .subject-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
         }
 
-        .subject-card {
-            background-color: var(--bg-tertiary);
-            border-radius: 12px;
-            padding: 20px;
-            border: 1px solid var(--border-color);
+        .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid var(--bg-tertiary);
+            border-top-color: var(--accent-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
         }
 
-        .subject-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 16px;
-        }
-
-        .subject-name {
-            font-size: 14px;
-            font-weight: 600;
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
         .test-table {
@@ -607,11 +402,6 @@
             gap: 16px;
             padding: 20px 24px;
             border-bottom: 1px solid var(--border-color);
-            transition: all 0.2s;
-        }
-
-        .table-row:hover {
-            background-color: var(--hover-bg);
         }
 
         .table-row:last-child {
@@ -651,39 +441,19 @@
             margin-left: 4px;
         }
 
-        .loading {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-secondary);
+        .user-info {
+            background: var(--bg-tertiary);
+            padding: 12px 20px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
-        .loading-spinner {
-            width: 48px;
-            height: 48px;
-            border: 4px solid var(--bg-tertiary);
-            border-top-color: var(--accent-blue);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 16px;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .animate-in {
-            animation: fadeInUp 0.5s ease forwards;
+        .username-display {
+            font-weight: 600;
+            color: var(--accent-blue);
         }
     </style>
 </head>
@@ -696,14 +466,14 @@
             <!-- Login Form -->
             <div id="loginForm">
                 <h2 class="auth-title">Welcome Back</h2>
-                <p class="auth-subtitle">Sign in to access your test analytics</p>
+                <p class="auth-subtitle">Sign in to view your analytics</p>
                 
                 <div id="loginError" class="error-message hidden"></div>
                 
                 <form onsubmit="handleLogin(event)">
                     <div class="form-group">
-                        <label class="form-label">Email</label>
-                        <input type="email" class="form-input" id="loginEmail" required placeholder="your@email.com">
+                        <label class="form-label">Username</label>
+                        <input type="text" class="form-input" id="loginUsername" required placeholder="Enter username">
                     </div>
                     
                     <div class="form-group">
@@ -722,25 +492,15 @@
             <!-- Register Form -->
             <div id="registerForm" class="hidden">
                 <h2 class="auth-title">Create Account</h2>
-                <p class="auth-subtitle">Start tracking your test performance</p>
+                <p class="auth-subtitle">Start tracking your performance</p>
                 
                 <div id="registerError" class="error-message hidden"></div>
                 <div id="registerSuccess" class="success-message hidden"></div>
                 
                 <form onsubmit="handleRegister(event)">
                     <div class="form-group">
-                        <label class="form-label">Full Name</label>
-                        <input type="text" class="form-input" id="registerName" required placeholder="John Doe">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Email</label>
-                        <input type="email" class="form-input" id="registerEmail" required placeholder="your@email.com">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Phone (Optional)</label>
-                        <input type="tel" class="form-input" id="registerPhone" placeholder="+91 98765 43210">
+                        <label class="form-label">Username</label>
+                        <input type="text" class="form-input" id="registerUsername" required placeholder="Choose username">
                     </div>
                     
                     <div class="form-group">
@@ -760,51 +520,23 @@
 
     <!-- Dashboard Screen -->
     <div id="dashboardScreen" class="hidden">
-        <!-- Sidebar -->
         <div class="sidebar">
             <div class="logo">Q</div>
             <div class="logo-text">Quizrr</div>
-
             <div class="nav-item active">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                    <polyline points="9 22 9 12 15 12 15 22"/>
-                </svg>
                 <span class="nav-label">Home</span>
             </div>
-
-            <div class="nav-item">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14 2 14 8 20 8"/>
-                </svg>
-                <span class="nav-label">All Tests</span>
+            <div class="test-series-selector">
+                <div class="test-series-label">JEE Main<br>2026</div>
             </div>
-
-            <div class="nav-item">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="12" y1="20" x2="12" y2="10"/>
-                    <line x1="18" y1="20" x2="18" y2="4"/>
-                    <line x1="6" y1="20" x2="6" y2="16"/>
-                </svg>
-                <span class="nav-label">Analysis</span>
-            </div>
-
-            <div class="test-series-selector-container">
-                <div class="test-series-selector" onclick="toggleSeriesDropdown()">
-                    <svg class="test-series-icon" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/>
-                    </svg>
-                    <div class="test-series-label" id="currentSeriesName">JEE Main<br>2026</div>
-                </div>
-                <div id="seriesDropdown" class="test-series-dropdown hidden"></div>
-            </div>
-
             <button class="logout-btn" onclick="handleLogout()">Logout</button>
         </div>
 
-        <!-- Main Content -->
         <div class="main-content">
+            <div class="user-info">
+                <span>Logged in as: <span class="username-display" id="usernameDisplay"></span></span>
+            </div>
+            
             <div id="dashboardContent">
                 <div class="loading">
                     <div class="loading-spinner"></div>
@@ -815,48 +547,24 @@
     </div>
 
     <script>
-        // API Configuration
-        const API_URL = 'http://localhost:3000/api'; // Change this to your deployed backend URL
+        const SUPABASE_URL = 'https://kgqxukyytpvmblypuaxw.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtncXh1a3l5dHB2bWJseXB1YXh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ5NTAzNzMsImV4cCI6MjA2MDUyNjM3M30.mOjd7vPXlPo4hGGKiCVG1fHx0sAMXoQEoOPWqF7_dGI';
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         let currentUser = null;
-        let currentSeries = null;
-        let allSeries = [];
-        let userAttempts = [];
 
-        // Check if user is logged in on page load
-        window.addEventListener('DOMContentLoaded', () => {
-            const token = localStorage.getItem('token');
-            if (token) {
-                verifyToken(token);
+        // Check if user is logged in
+        window.addEventListener('DOMContentLoaded', async () => {
+            const savedUser = localStorage.getItem('quizrr_user');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                document.getElementById('usernameDisplay').textContent = currentUser.username;
+                showDashboard();
+                loadUserAttempts();
             }
         });
 
-        // Verify token and load user data
-        async function verifyToken(token) {
-            try {
-                const response = await fetch(`${API_URL}/auth/me`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    currentUser = data.user;
-                    showDashboard();
-                    loadTestSeries();
-                } else {
-                    localStorage.removeItem('token');
-                    showAuthScreen();
-                }
-            } catch (error) {
-                console.error('Token verification error:', error);
-                localStorage.removeItem('token');
-                showAuthScreen();
-            }
-        }
-
-        // Show/Hide Forms
         function showLoginForm() {
             document.getElementById('loginForm').classList.remove('hidden');
             document.getElementById('registerForm').classList.add('hidden');
@@ -877,11 +585,10 @@
             document.getElementById('dashboardScreen').classList.remove('hidden');
         }
 
-        // Handle Login
         async function handleLogin(event) {
             event.preventDefault();
             
-            const email = document.getElementById('loginEmail').value;
+            const username = document.getElementById('loginUsername').value.trim();
             const password = document.getElementById('loginPassword').value;
             const errorDiv = document.getElementById('loginError');
             const loginBtn = document.getElementById('loginBtn');
@@ -891,28 +598,33 @@
             loginBtn.textContent = 'Signing in...';
 
             try {
-                const response = await fetch(`${API_URL}/auth/login`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ email, password })
-                });
+                // Query users table
+                const { data: users, error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('email', username)
+                    .eq('password_hash', password)
+                    .limit(1);
 
-                const data = await response.json();
+                if (error) throw error;
 
-                if (response.ok) {
-                    localStorage.setItem('token', data.token);
-                    currentUser = data.user;
-                    showDashboard();
-                    loadTestSeries();
-                } else {
-                    errorDiv.textContent = data.error || 'Login failed';
-                    errorDiv.classList.remove('hidden');
+                if (!users || users.length === 0) {
+                    throw new Error('Invalid username or password');
                 }
+
+                currentUser = {
+                    id: users[0].id,
+                    username: users[0].email,
+                    full_name: users[0].full_name
+                };
+
+                localStorage.setItem('quizrr_user', JSON.stringify(currentUser));
+                document.getElementById('usernameDisplay').textContent = currentUser.username;
+                showDashboard();
+                loadUserAttempts();
             } catch (error) {
                 console.error('Login error:', error);
-                errorDiv.textContent = 'Network error. Please try again.';
+                errorDiv.textContent = error.message || 'Login failed';
                 errorDiv.classList.remove('hidden');
             } finally {
                 loginBtn.disabled = false;
@@ -920,13 +632,10 @@
             }
         }
 
-        // Handle Register
         async function handleRegister(event) {
             event.preventDefault();
             
-            const full_name = document.getElementById('registerName').value;
-            const email = document.getElementById('registerEmail').value;
-            const phone = document.getElementById('registerPhone').value;
+            const username = document.getElementById('registerUsername').value.trim();
             const password = document.getElementById('registerPassword').value;
             const errorDiv = document.getElementById('registerError');
             const successDiv = document.getElementById('registerSuccess');
@@ -935,36 +644,50 @@
             errorDiv.classList.add('hidden');
             successDiv.classList.add('hidden');
             registerBtn.disabled = true;
-            registerBtn.textContent = 'Creating account...';
+            registerBtn.textContent = 'Creating...';
 
             try {
-                const response = await fetch(`${API_URL}/auth/register`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ email, password, full_name, phone })
-                });
+                // Check if username exists
+                const { data: existing } = await supabase
+                    .from('users')
+                    .select('id')
+                    .eq('email', username)
+                    .limit(1);
 
-                const data = await response.json();
-
-                if (response.ok) {
-                    localStorage.setItem('token', data.token);
-                    currentUser = data.user;
-                    successDiv.textContent = 'Account created successfully! Redirecting...';
-                    successDiv.classList.remove('hidden');
-                    
-                    setTimeout(() => {
-                        showDashboard();
-                        loadTestSeries();
-                    }, 1500);
-                } else {
-                    errorDiv.textContent = data.error || 'Registration failed';
-                    errorDiv.classList.remove('hidden');
+                if (existing && existing.length > 0) {
+                    throw new Error('Username already taken');
                 }
+
+                // Insert new user
+                const { data: newUser, error } = await supabase
+                    .from('users')
+                    .insert([{
+                        email: username,
+                        password_hash: password,
+                        full_name: username
+                    }])
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                successDiv.textContent = 'Account created! Redirecting...';
+                successDiv.classList.remove('hidden');
+                
+                setTimeout(() => {
+                    currentUser = {
+                        id: newUser.id,
+                        username: newUser.email,
+                        full_name: newUser.full_name
+                    };
+                    localStorage.setItem('quizrr_user', JSON.stringify(currentUser));
+                    document.getElementById('usernameDisplay').textContent = currentUser.username;
+                    showDashboard();
+                    loadUserAttempts();
+                }, 1500);
             } catch (error) {
                 console.error('Registration error:', error);
-                errorDiv.textContent = 'Network error. Please try again.';
+                errorDiv.textContent = error.message || 'Registration failed';
                 errorDiv.classList.remove('hidden');
             } finally {
                 registerBtn.disabled = false;
@@ -972,336 +695,150 @@
             }
         }
 
-        // Handle Logout
         function handleLogout() {
-            localStorage.removeItem('token');
+            localStorage.removeItem('quizrr_user');
             currentUser = null;
-            currentSeries = null;
             showAuthScreen();
             showLoginForm();
         }
 
-        // Load Test Series
-        async function loadTestSeries() {
-            try {
-                const response = await fetch(`${API_URL}/test-series`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                });
-
-                const data = await response.json();
-                allSeries = data.testSeries;
-                
-                if (allSeries.length > 0) {
-                    currentSeries = allSeries[0];
-                    updateSeriesDropdown();
-                    loadUserAttempts();
-                }
-            } catch (error) {
-                console.error('Load test series error:', error);
-            }
-        }
-
-        // Update Series Dropdown
-        function updateSeriesDropdown() {
-            const dropdown = document.getElementById('seriesDropdown');
-            dropdown.innerHTML = allSeries.map(series => `
-                <div class="test-series-option ${series.id === currentSeries.id ? 'active' : ''}" 
-                     onclick="selectSeries('${series.id}')">
-                    <div class="test-series-option-name">${series.name}</div>
-                    <div class="test-series-option-meta">${series.exam_type} • ${series.total_tests} tests</div>
-                </div>
-            `).join('');
-
-            // Update current series name
-            const seriesNameParts = currentSeries.name.split(' ');
-            const examType = seriesNameParts[0] + ' ' + seriesNameParts[1];
-            const year = seriesNameParts[2];
-            document.getElementById('currentSeriesName').innerHTML = `${examType}<br>${year}`;
-        }
-
-        // Toggle Series Dropdown
-        function toggleSeriesDropdown() {
-            const dropdown = document.getElementById('seriesDropdown');
-            dropdown.classList.toggle('hidden');
-        }
-
-        // Select Series
-        function selectSeries(seriesId) {
-            currentSeries = allSeries.find(s => s.id === seriesId);
-            updateSeriesDropdown();
-            toggleSeriesDropdown();
-            loadUserAttempts();
-        }
-
-        // Load User Attempts
         async function loadUserAttempts() {
             const contentDiv = document.getElementById('dashboardContent');
-            contentDiv.innerHTML = `
-                <div class="loading">
-                    <div class="loading-spinner"></div>
-                    <p>Loading your test results...</p>
-                </div>
-            `;
-
+            
             try {
-                const response = await fetch(`${API_URL}/test-series/${currentSeries.id}/my-attempts`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                });
+                const { data: attempts, error } = await supabase
+                    .from('user_test_attempts')
+                    .select(`
+                        *,
+                        tests (
+                            name,
+                            test_date
+                        )
+                    `)
+                    .eq('user_id', currentUser.id)
+                    .order('attempted_at', { ascending: false });
 
-                const data = await response.json();
-                userAttempts = data.attempts || [];
-                
-                renderDashboard();
+                if (error) throw error;
+
+                if (!attempts || attempts.length === 0) {
+                    contentDiv.innerHTML = `
+                        <div class="loading">
+                            <p>No test attempts found.</p>
+                            <p style="margin-top: 12px; color: var(--text-muted);">Contact admin to add your test results!</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                renderDashboard(attempts);
             } catch (error) {
                 console.error('Load attempts error:', error);
                 contentDiv.innerHTML = `
                     <div class="loading">
-                        <p style="color: var(--accent-red);">Failed to load data. Please refresh the page.</p>
+                        <p style="color: var(--accent-red);">Error: ${error.message}</p>
                     </div>
                 `;
             }
         }
 
-        // Render Dashboard
-        function renderDashboard() {
+        function renderDashboard(attempts) {
             const contentDiv = document.getElementById('dashboardContent');
             
-            if (userAttempts.length === 0) {
-                contentDiv.innerHTML = `
-                    <div class="loading">
-                        <p>No test attempts found for this series.</p>
-                        <p style="margin-top: 12px; color: var(--text-muted);">Start taking tests to see your analytics here!</p>
-                    </div>
-                `;
-                return;
-            }
-
-            // Calculate summary stats
-            const totalAttempts = userAttempts.length;
-            const avgScore = (userAttempts.reduce((sum, a) => sum + a.total_score, 0) / totalAttempts / 300 * 100).toFixed(0);
-            const avgCorrect = (userAttempts.reduce((sum, a) => sum + a.attempted_correct, 0) / totalAttempts / 75 * 100).toFixed(0);
-            const avgWrong = (userAttempts.reduce((sum, a) => sum + a.attempted_wrong, 0) / totalAttempts / 75 * 100).toFixed(0);
-            const avgNotAttempted = (userAttempts.reduce((sum, a) => sum + a.not_attempted, 0) / totalAttempts / 75 * 100).toFixed(0);
-            const avgNotVisited = (userAttempts.reduce((sum, a) => sum + a.not_visited, 0) / totalAttempts / 75 * 100).toFixed(0);
-
-            // Calculate subject averages
-            const physicsAvg = userAttempts.filter(a => a.physics_score !== null).length > 0
-                ? (userAttempts.reduce((sum, a) => sum + (a.physics_score || 0), 0) / userAttempts.filter(a => a.physics_score !== null).length / 100 * 100).toFixed(0)
-                : 0;
-            const chemistryAvg = userAttempts.filter(a => a.chemistry_score !== null).length > 0
-                ? (userAttempts.reduce((sum, a) => sum + (a.chemistry_score || 0), 0) / userAttempts.filter(a => a.chemistry_score !== null).length / 100 * 100).toFixed(0)
-                : 0;
-            const mathAvg = userAttempts.filter(a => a.mathematics_score !== null).length > 0
-                ? (userAttempts.reduce((sum, a) => sum + (a.mathematics_score || 0), 0) / userAttempts.filter(a => a.mathematics_score !== null).length / 100 * 100).toFixed(0)
-                : 0;
+            const totalAttempts = attempts.length;
+            const avgScore = (attempts.reduce((sum, a) => sum + a.total_score, 0) / totalAttempts / 300 * 100).toFixed(0);
+            const avgCorrect = (attempts.reduce((sum, a) => sum + a.attempted_correct, 0) / totalAttempts / 75 * 100).toFixed(0);
+            const avgWrong = (attempts.reduce((sum, a) => sum + a.attempted_wrong, 0) / totalAttempts / 75 * 100).toFixed(0);
+            const avgNotAttempted = (attempts.reduce((sum, a) => sum + a.not_attempted, 0) / totalAttempts / 75 * 100).toFixed(0);
+            const avgNotVisited = (attempts.reduce((sum, a) => sum + a.not_visited, 0) / totalAttempts / 75 * 100).toFixed(0);
 
             contentDiv.innerHTML = `
-                <div style="display: flex; gap: 32px;">
-                    <div class="left-panel">
-                        <div class="pack-selector">
-                            <div class="pack-label">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                                </svg>
-                                All Quizrr Mock Test
-                            </div>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="6 9 12 15 18 9"/>
-                            </svg>
-                        </div>
+                <h1 style="font-size: 36px; font-weight: 700; margin-bottom: 32px;">Performance Dashboard</h1>
 
-                        <div class="pack-title">${currentSeries.name}</div>
-                        <div class="pack-subtitle">${totalAttempts} tests attempted</div>
-
-                        <div class="analysis-menu">
-                            <div class="analysis-item active">
-                                <div class="analysis-item-content">
-                                    <svg class="analysis-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <line x1="12" y1="20" x2="12" y2="10"/>
-                                        <line x1="18" y1="20" x2="18" y2="4"/>
-                                        <line x1="6" y1="20" x2="6" y2="16"/>
-                                    </svg>
-                                    <span class="analysis-label">Performance</span>
-                                </div>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="9 18 15 12 9 6"/>
-                                </svg>
+                <div class="performance-card">
+                    <h3 class="section-title">Summary (${totalAttempts} tests)</h3>
+                    
+                    <div class="summary-grid">
+                        <div class="summary-item">
+                            <div class="summary-label">Average Score</div>
+                            <div class="summary-value" style="color: #f59e0b;">${avgScore}%</div>
+                            <div class="summary-bar">
+                                <div class="summary-bar-fill" style="width: ${avgScore}%; background: linear-gradient(90deg, #f59e0b, #fbbf24);"></div>
                             </div>
                         </div>
-                    </div>
-
-                    <div style="flex: 1;">
-                        <div class="content-header">
-                            <h1 class="content-title">Performance</h1>
-                            
-                            <div class="filter-tabs">
-                                <div class="filter-tab active">All Tests</div>
-                                <div class="filter-tab">Last 3 Tests</div>
-                                <div class="filter-tab">Last 5 Tests</div>
-                                <div class="filter-tab">Last 10 Tests</div>
+                        <div class="summary-item">
+                            <div class="summary-label">Correct</div>
+                            <div class="summary-value" style="color: #10b981;">${avgCorrect}%</div>
+                            <div class="summary-bar">
+                                <div class="summary-bar-fill" style="width: ${avgCorrect}%; background: linear-gradient(90deg, #10b981, #34d399);"></div>
                             </div>
                         </div>
-
-                        <div class="performance-card animate-in">
-                            <h3 class="section-title">Summary</h3>
-                            
-                            <div class="summary-grid">
-                                <div class="summary-item">
-                                    <div class="summary-label">Average Score</div>
-                                    <div class="summary-value" style="color: #f59e0b;">${avgScore}%</div>
-                                    <div class="summary-bar">
-                                        <div class="summary-bar-fill" style="width: ${avgScore}%; background: linear-gradient(90deg, #f59e0b, #fbbf24);"></div>
-                                    </div>
-                                </div>
-                                
-                                <div class="summary-item">
-                                    <div class="summary-label">Attempted Correct</div>
-                                    <div class="summary-value" style="color: #10b981;">${avgCorrect}%</div>
-                                    <div class="summary-bar">
-                                        <div class="summary-bar-fill" style="width: ${avgCorrect}%; background: linear-gradient(90deg, #10b981, #34d399);"></div>
-                                    </div>
-                                </div>
-                                
-                                <div class="summary-item">
-                                    <div class="summary-label">Attempted Wrong</div>
-                                    <div class="summary-value" style="color: #ef4444;">${avgWrong}%</div>
-                                    <div class="summary-bar">
-                                        <div class="summary-bar-fill" style="width: ${avgWrong}%; background: linear-gradient(90deg, #ef4444, #f87171);"></div>
-                                    </div>
-                                </div>
-                                
-                                <div class="summary-item">
-                                    <div class="summary-label">Not Attempted</div>
-                                    <div class="summary-value" style="color: #6366f1;">${avgNotAttempted}%</div>
-                                    <div class="summary-bar">
-                                        <div class="summary-bar-fill" style="width: ${avgNotAttempted}%; background: linear-gradient(90deg, #6366f1, #818cf8);"></div>
-                                    </div>
-                                </div>
-                                
-                                <div class="summary-item">
-                                    <div class="summary-label">Not Visited Qs</div>
-                                    <div class="summary-value" style="color: #64748b;">${avgNotVisited}%</div>
-                                    <div class="summary-bar">
-                                        <div class="summary-bar-fill" style="width: ${avgNotVisited}%; background: linear-gradient(90deg, #64748b, #94a3b8);"></div>
-                                    </div>
-                                </div>
+                        <div class="summary-item">
+                            <div class="summary-label">Wrong</div>
+                            <div class="summary-value" style="color: #ef4444;">${avgWrong}%</div>
+                            <div class="summary-bar">
+                                <div class="summary-bar-fill" style="width: ${avgWrong}%; background: linear-gradient(90deg, #ef4444, #f87171);"></div>
                             </div>
                         </div>
-
-                        <div class="performance-card animate-in" style="animation-delay: 0.1s;">
-                            <div class="subject-grid">
-                                <div class="subject-card">
-                                    <div class="subject-header">
-                                        <span style="color: #6366f1; font-size: 18px;">✓</span>
-                                        <span class="subject-name">Overall</span>
-                                    </div>
-                                    <div class="summary-item">
-                                        <div class="summary-label">Avg Score</div>
-                                        <div class="summary-value" style="color: #f59e0b; font-size: 24px;">${avgScore}%</div>
-                                    </div>
-                                </div>
-
-                                <div class="subject-card">
-                                    <div class="subject-header">
-                                        <span style="color: #06b6d4; font-size: 18px;">∑</span>
-                                        <span class="subject-name">Mathematics</span>
-                                    </div>
-                                    <div class="summary-item">
-                                        <div class="summary-label">Avg Score</div>
-                                        <div class="summary-value" style="color: #f59e0b; font-size: 24px;">${mathAvg}%</div>
-                                    </div>
-                                </div>
-
-                                <div class="subject-card">
-                                    <div class="subject-header">
-                                        <span style="color: #10b981; font-size: 18px;">⚛</span>
-                                        <span class="subject-name">Physics</span>
-                                    </div>
-                                    <div class="summary-item">
-                                        <div class="summary-label">Avg Score</div>
-                                        <div class="summary-value" style="color: #f59e0b; font-size: 24px;">${physicsAvg}%</div>
-                                    </div>
-                                </div>
-
-                                <div class="subject-card">
-                                    <div class="subject-header">
-                                        <span style="color: #f97316; font-size: 18px;">🧪</span>
-                                        <span class="subject-name">Chemistry</span>
-                                    </div>
-                                    <div class="summary-item">
-                                        <div class="summary-label">Avg Score</div>
-                                        <div class="summary-value" style="color: #f59e0b; font-size: 24px;">${chemistryAvg}%</div>
-                                    </div>
-                                </div>
+                        <div class="summary-item">
+                            <div class="summary-label">Not Attempted</div>
+                            <div class="summary-value" style="color: #6366f1;">${avgNotAttempted}%</div>
+                            <div class="summary-bar">
+                                <div class="summary-bar-fill" style="width: ${avgNotAttempted}%; background: linear-gradient(90deg, #6366f1, #818cf8);"></div>
                             </div>
                         </div>
-
-                        <div class="animate-in" style="animation-delay: 0.2s;">
-                            <h3 class="section-title">Test-wise Breakdown</h3>
-
-                            <div class="test-table">
-                                <div class="table-header">
-                                    <div>Test Title</div>
-                                    <div>Total Score</div>
-                                    <div>Attempted Correct</div>
-                                    <div>Attempted Wrong</div>
-                                    <div>Not Attempted</div>
-                                    <div>Not Visited Qs</div>
-                                </div>
-
-                                ${userAttempts.map(attempt => {
-                                    const testName = attempt.tests?.name || 'Test';
-                                    const testDate = attempt.tests?.test_date ? new Date(attempt.tests.test_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
-                                    
-                                    return `
-                                        <div class="table-row">
-                                            <div>
-                                                <div class="test-name">${testName}</div>
-                                                <div class="test-date">${testDate}</div>
-                                            </div>
-                                            <div class="stat-value" style="color: #f59e0b;">
-                                                ${attempt.total_score}<span class="stat-max">/ 300</span>
-                                                <div class="stat-bar" style="--color: #f59e0b; height: ${attempt.total_score / 300 * 100}px;"></div>
-                                            </div>
-                                            <div class="stat-value" style="color: #10b981;">
-                                                ${attempt.attempted_correct}<span class="stat-max">/ 75</span>
-                                                <div class="stat-bar" style="--color: #10b981; height: ${attempt.attempted_correct / 75 * 100}px;"></div>
-                                            </div>
-                                            <div class="stat-value" style="color: #ef4444;">
-                                                ${attempt.attempted_wrong}<span class="stat-max">/ 75</span>
-                                                <div class="stat-bar" style="--color: #ef4444; height: ${attempt.attempted_wrong / 75 * 100}px;"></div>
-                                            </div>
-                                            <div class="stat-value" style="color: #6366f1;">
-                                                ${attempt.not_attempted}<span class="stat-max">/ 75</span>
-                                                <div class="stat-bar" style="--color: #6366f1; height: ${attempt.not_attempted / 75 * 100}px;"></div>
-                                            </div>
-                                            <div class="stat-value" style="color: #64748b;">
-                                                ${attempt.not_visited}<span class="stat-max">/ 75</span>
-                                                <div class="stat-bar" style="--color: #64748b; height: ${attempt.not_visited / 75 * 100}px;"></div>
-                                            </div>
-                                        </div>
-                                    `;
-                                }).join('')}
+                        <div class="summary-item">
+                            <div class="summary-label">Not Visited</div>
+                            <div class="summary-value" style="color: #64748b;">${avgNotVisited}%</div>
+                            <div class="summary-bar">
+                                <div class="summary-bar-fill" style="width: ${avgNotVisited}%; background: linear-gradient(90deg, #64748b, #94a3b8);"></div>
                             </div>
                         </div>
                     </div>
                 </div>
+
+                <div style="margin-top: 32px;">
+                    <h3 class="section-title">Test-wise Breakdown</h3>
+                    <div class="test-table">
+                        <div class="table-header">
+                            <div>Test Title</div>
+                            <div>Total Score</div>
+                            <div>Correct</div>
+                            <div>Wrong</div>
+                            <div>Not Attempted</div>
+                            <div>Not Visited</div>
+                        </div>
+                        ${attempts.map(attempt => `
+                            <div class="table-row">
+                                <div>
+                                    <div class="test-name">${attempt.tests?.name || 'Test'}</div>
+                                    <div class="test-date">${new Date(attempt.attempted_at).toLocaleDateString()}</div>
+                                </div>
+                                <div class="stat-value" style="color: #f59e0b;">
+                                    ${attempt.total_score}<span class="stat-max">/ 300</span>
+                                    <div class="stat-bar" style="--color: #f59e0b; height: ${attempt.total_score / 300 * 80}px;"></div>
+                                </div>
+                                <div class="stat-value" style="color: #10b981;">
+                                    ${attempt.attempted_correct}<span class="stat-max">/ 75</span>
+                                    <div class="stat-bar" style="--color: #10b981; height: ${attempt.attempted_correct / 75 * 80}px;"></div>
+                                </div>
+                                <div class="stat-value" style="color: #ef4444;">
+                                    ${attempt.attempted_wrong}<span class="stat-max">/ 75</span>
+                                    <div class="stat-bar" style="--color: #ef4444; height: ${attempt.attempted_wrong / 75 * 80}px;"></div>
+                                </div>
+                                <div class="stat-value" style="color: #6366f1;">
+                                    ${attempt.not_attempted}<span class="stat-max">/ 75</span>
+                                    <div class="stat-bar" style="--color: #6366f1; height: ${attempt.not_attempted / 75 * 80}px;"></div>
+                                </div>
+                                <div class="stat-value" style="color: #64748b;">
+                                    ${attempt.not_visited}<span class="stat-max">/ 75</span>
+                                    <div class="stat-bar" style="--color: #64748b; height: ${attempt.not_visited / 75 * 80}px;"></div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
             `;
         }
-
-        // Close dropdown when clicking outside
-        document.addEventListener('click', (e) => {
-            const dropdown = document.getElementById('seriesDropdown');
-            const selector = document.querySelector('.test-series-selector');
-            
-            if (dropdown && selector && !dropdown.contains(e.target) && !selector.contains(e.target)) {
-                dropdown.classList.add('hidden');
-            }
-        });
     </script>
 </body>
 </html>
