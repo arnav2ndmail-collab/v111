@@ -992,7 +992,7 @@ export default function TestZyro() {
 }
 
 function HeroTypewriter() {
-  const words = ['BITSAT', 'JEE Main', 'JEE Adv', 'BITSAT', 'Your Exam']
+  const words = ['BITSAT', 'JEE Main', 'JEE Adv', 'BITSAT', 'uspeee']
   const [wordIdx, setWordIdx] = useState(0)
   const [txt, setTxt] = useState('')
   const [deleting, setDeleting] = useState(false)
@@ -1026,7 +1026,7 @@ function HeroTypewriter() {
         <div className="hero-tw-word">
           {txt}<span className="hero-tw-cursor" style={{opacity:blink?1:0}}>|</span>
         </div>
-        <div className="hero-tw-sub">Full-length mock tests · Detailed analysis · BITSAT pattern</div>
+        <div className="hero-tw-sub">Full-length mock tests · Detailed analysis</div>
       </div>
     </div>
   )
