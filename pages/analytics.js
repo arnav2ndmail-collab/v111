@@ -104,9 +104,9 @@ export default function Analytics() {
         .main-content{margin-left:90px;padding:32px;min-height:100vh}
         .layout{display:flex;gap:32px}
 
-        /* LEFT PANEL — 480px */
-        .left-panel{width:480px;flex-shrink:0}
-        .pack-selector{background:#141927;border:1px solid #6366f1;border-radius:12px;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;cursor:pointer;transition:all .2s}
+        /* LEFT PANEL — fixed width, proper spacing */
+        .left-panel{width:420px;flex-shrink:0;padding-right:8px}
+        .pack-selector{background:#141927;border:1px solid #6366f1;border-radius:12px;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;cursor:pointer;transition:all .2s}
         .pack-selector:hover{background:#1a2234}
         .pack-label{display:flex;align-items:center;gap:12px;color:#fff;font-weight:600;font-size:15px}
         .pack-label svg{width:20px;height:20px;stroke:#fff}
@@ -357,11 +357,22 @@ export default function Analytics() {
                         <div>Not Visited Qs</div>
                       </div>
                       {filtered.map((a,i) => {
-                        const tot = a.correct+a.wrong+a.skipped+a.unattempted
-                        const sp = pct(a.score, a.max_score)
-                        const cp = pct(a.correct, tot), wp=pct(a.wrong, tot)
-                        const np = pct(a.unattempted, tot), vp=pct(a.skipped, tot)
+                        const isOverall = activeSubj === 'Overall'
+                        const ss = !isOverall ? a.subj_stats?.[activeSubj] : null
+                        const tot = isOverall
+                          ? a.correct+a.wrong+a.skipped+a.unattempted
+                          : ss ? (ss.cor||0)+(ss.wrg||0)+(ss.skp||0)+(ss.un||0) : 0
+                        const scr = isOverall ? a.score : ss ? (ss.cor||0)*a.marks_correct-(ss.wrg||0)*a.marks_wrong : 0
+                        const maxScr = isOverall ? a.max_score : ss ? tot*(a.marks_correct||3) : 0
+                        const cor = isOverall ? a.correct : ss?.cor||0
+                        const wrg = isOverall ? a.wrong : ss?.wrg||0
+                        const na = isOverall ? a.unattempted : ss?.un||0
+                        const skp = isOverall ? a.skipped : ss?.skp||0
+                        const sp = pct(scr, maxScr)
+                        const cp = pct(cor, tot), wp=pct(wrg, tot)
+                        const np = pct(na, tot), vp=pct(skp, tot)
                         const maxH = 120
+                        if (!isOverall && !ss) return null
                         return (
                           <div key={i} className="table-row">
                             <div>
@@ -369,11 +380,11 @@ export default function Analytics() {
                               <div className="test-date">{fmtDate(a.taken_at)}</div>
                             </div>
                             {[
-                              [sp,  a.score,       a.max_score, '#f59e0b'],
-                              [cp,  a.correct,      tot,         '#10b981'],
-                              [wp,  a.wrong,        tot,         '#ef4444'],
-                              [np,  a.unattempted,  tot,         '#6366f1'],
-                              [vp,  a.skipped,      tot,         '#64748b'],
+                              [sp,  scr,  maxScr, '#f59e0b'],
+                              [cp,  cor,   tot,    '#10b981'],
+                              [wp,  wrg,   tot,    '#ef4444'],
+                              [np,  na,    tot,    '#6366f1'],
+                              [vp,  skp,   tot,    '#64748b'],
                             ].map(([p,v,m,c],j)=>(
                               <div key={j} className="stat-value" style={{color:c}}>
                                 {showPct ? <>{p}<span className="stat-max">%</span></> : <>{v}<span className="stat-max">/ {m}</span></>}
