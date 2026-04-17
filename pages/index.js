@@ -300,7 +300,7 @@ export default function TestZyro() {
 
   const goTo = (idx) => { markVisited(cur); setCur(idx) }
 
-  const doSubmit = useCallback((auto=false) => {
+  const doSubmit = useCallback(async (auto=false) => {
     if (!auto && !confirm('Submit test? This cannot be undone.')) return
     clearInterval(timerRef.current)
     const finalAns = cbtAns.current
