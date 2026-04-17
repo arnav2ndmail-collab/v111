@@ -711,10 +711,11 @@ const APP_CSS = `
 .rq-bm{background:#fff8e1;border:1px solid #ffe082;color:#e65100;padding:6px 10px;border-radius:6px;cursor:pointer;display:flex;align-items:center}
 .rq-bm:hover{background:#fef3c7}
 .rq-badge{display:flex;align-items:center;gap:5px;font-size:.74rem;font-weight:700;padding:5px 12px;border-radius:20px}
-.rq-body{background:#141927;border:1px solid #2d3748;border-radius:12px;padding:16px;min-height:60px}
-.rq-imgs{text-align:center}
-.rq-text{font-size:.9rem;line-height:1.9;color:#e2e8f0;white-space:pre-wrap}
-.rq-opts{display:flex;flex-direction:column;gap:8px;margin-top:0}
+.rq-body{background:white;border:1px solid #e2e8f0;border-radius:12px;padding:16px;min-height:60px;margin-bottom:0}
+.rq-imgs{text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}
+.rq-imgs img{max-width:min(100%,480px);max-height:300px;object-fit:contain;border-radius:6px}
+.rq-text{font-size:.9rem;line-height:1.9;color:#1e293b;white-space:pre-wrap}
+.rq-opts{display:flex;flex-direction:column;gap:8px;margin-top:12px}
 .rq-opt{display:flex;align-items:flex-start;gap:10px;border:1.5px solid #2d3748;border-radius:10px;padding:11px 13px;background:#141927;transition:all .12s}
 .rq-opt.cor{border-color:#2e7d32!important;background:#e8f5e9!important}
 .rq-opt.wrg{border-color:#c62828!important;background:#ffebee!important}
@@ -726,7 +727,7 @@ const APP_CSS = `
 .rqt{display:flex;align-items:center;gap:4px;font-size:.6rem;font-weight:700;padding:2px 8px;border-radius:8px;white-space:nowrap}
 .rqt.green{background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7}
 .rqt.red{background:#ffebee;color:#c62828;border:1px solid #ef9a9a}
-.rq-int{background:#141927;border-radius:10px;overflow:hidden;border:1px solid #2d3748}
+.rq-int{background:#0d1220;border-radius:10px;overflow:hidden;border:1px solid #2d3748;margin-top:12px}
 .rq-int-row{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #eee;font-size:.82rem;color:#6b7280}
 .rq-int-row:last-child{border-bottom:none}
 .rq-nav{display:flex;align-items:center;justify-content:space-between;border-top:1px solid #1e293b;padding-top:12px;margin-top:auto}

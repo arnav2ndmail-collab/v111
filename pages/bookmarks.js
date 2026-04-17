@@ -196,7 +196,7 @@ export default function Bookmarks() {
                 {qImg && qImg.length > 0 && (
                   <div className="bm-qv-imgs">
                     {qImg.map((img,i)=>(
-                      <img key={i} src={`data:image/png;base64,${img}`} alt="" style={{maxWidth:'100%',display:'block',margin:'0 auto 8px'}}/>
+                      <img key={i} src={`data:image/png;base64,${img}`} alt="" style={{maxWidth:'min(100%,480px)',maxHeight:300,objectFit:'contain',display:'block',margin:'0 auto 6px'}}/>
                     ))}
                   </div>
                 )}
@@ -294,9 +294,9 @@ body{background:#f5f5f5;color:#212121;font-family:'Roboto',sans-serif;min-height
 .bm-qv-subj{font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:20px;font-family:'Roboto Mono',monospace}
 .bm-qv-num{font-size:.78rem;font-weight:700;color:#555;font-family:'Roboto Mono',monospace;background:#f5f5f5;border:1px solid #ddd;padding:3px 10px;border-radius:4px}
 .bm-qv-test{font-size:.72rem;color:#aaa}
-.bm-qv-content{background:#fafafa;border:1px solid #e0e0e0;border-radius:8px;padding:14px;margin-bottom:16px;min-height:60px}
+.bm-qv-content{background:white;border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin-bottom:14px;min-height:60px}
 .bm-qv-text{font-size:.92rem;line-height:1.85;color:#212121;white-space:pre-wrap}
-.bm-qv-imgs{text-align:center}
+.bm-qv-imgs{text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}
 .bm-img-loading{color:#888;font-size:.8rem;padding:10px 0}
 .bm-opts{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
 .bm-opt{display:flex;align-items:flex-start;gap:10px;background:#141927;border:1.5px solid #ddd;border-radius:6px;padding:10px 13px;cursor:pointer;transition:all .12s}

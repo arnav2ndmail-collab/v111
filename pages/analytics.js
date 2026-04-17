@@ -14,13 +14,8 @@ const pct = (a,b) => b ? Math.round(a/b*100) : 0
 const fmtDate = iso => { try { return new Date(iso).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) } catch(e){return ''} }
 
 const ANALYSIS_ITEMS = [
-  { label:'Performance',        icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg> },
-  { label:'Timeline',           icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
-  { label:'Qs Type Breakup',    icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> },
-  { label:'Quality of Attempts',icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> },
-  { label:'Time Analysis',      icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
-  { label:'Difficulty Analysis',icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg> },
-  { label:'Chapter Analysis',   icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> },
+  { label:'Performance', icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg> },
+  { label:'Timeline',    icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
 ]
 
 export default function Analytics() {
@@ -391,6 +386,46 @@ export default function Analytics() {
                     </div>
                   </div>
                 </>
+              ) : section==='Timeline' ? (
+                <div className="performance-card animate-in">
+                  <h3 className="section-title">Score Timeline</h3>
+                  <div style={{overflowX:'auto',paddingBottom:8}}>
+                    <div style={{display:'flex',alignItems:'flex-end',gap:10,minHeight:180,padding:'12px 4px',borderBottom:'1px solid #2d3748',minWidth:filtered.length*62+'px'}}>
+                      {filtered.slice().reverse().map((a,i)=>{
+                        const sp=pct(a.score,a.max_score)
+                        const col=sp>=60?'#10b981':sp>=40?'#f59e0b':'#ef4444'
+                        return(
+                          <div key={i} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,minWidth:52,flex:'0 0 52px'}}>
+                            <div style={{fontSize:'.65rem',color:col,fontWeight:800}}>{sp}%</div>
+                            <div style={{width:36,background:col,borderRadius:'6px 6px 0 0',height:Math.max(6,sp*1.5)+'px',opacity:.9,transition:'height .4s'}}/>
+                            <div style={{fontSize:'.55rem',color:'#64748b',textAlign:'center',lineHeight:1.3,maxWidth:52,wordBreak:'break-word',marginTop:4}}>{a.test_title.length>12?a.test_title.slice(0,12)+'…':a.test_title}</div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                    <div style={{display:'flex',gap:14,marginTop:12,flexWrap:'wrap'}}>
+                      {[['#10b981','≥60% Good'],['#f59e0b','40–60% Average'],['#ef4444','<40% Needs Work']].map(([col,l])=>(
+                        <div key={l} style={{display:'flex',alignItems:'center',gap:5,fontSize:'.72rem',color:'#64748b'}}>
+                          <div style={{width:10,height:10,borderRadius:3,background:col}}/>
+                          {l}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{marginTop:20,display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))',gap:10}}>
+                    {filtered.slice().reverse().map((a,i)=>(
+                      <div key={i} style={{background:'#0d1220',border:'1px solid #1e293b',borderRadius:10,padding:12}}>
+                        <div style={{fontSize:'.72rem',fontWeight:600,color:'#94a3b8',marginBottom:3,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{a.test_title}</div>
+                        <div style={{fontSize:'.6rem',color:'#475569',marginBottom:8}}>{fmtDate(a.taken_at)}</div>
+                        <div style={{display:'flex',gap:12}}>
+                          <div><div style={{fontSize:'.55rem',color:'#64748b',marginBottom:1}}>Score</div><div style={{fontSize:'.96rem',fontWeight:800,color:'#f59e0b'}}>{a.score}/{a.max_score}</div></div>
+                          <div><div style={{fontSize:'.55rem',color:'#64748b',marginBottom:1}}>Correct</div><div style={{fontSize:'.96rem',fontWeight:800,color:'#10b981'}}>{a.correct}</div></div>
+                          <div><div style={{fontSize:'.55rem',color:'#64748b',marginBottom:1}}>Wrong</div><div style={{fontSize:'.96rem',fontWeight:800,color:'#ef4444'}}>{a.wrong}</div></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               ) : (
                 <div className="state">
                   <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#2d3748" strokeWidth="1.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
