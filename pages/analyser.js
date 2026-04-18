@@ -585,79 +585,71 @@ export default function Analyser() {
                   </div>
 
                   {/* Content */}
-                  <div className="rq-body">
-                    {curQ2.images?.length>0 ? (
-                      // IMAGE MODE: full image renders naturally, no overlap
-                      <div className="rq-imgs">
+                  {curQ2.images?.length>0 ? (
+                    // IMAGE MODE: full image with answer badge overlaid in top-right corner
+                    <div className="rq-body" style={{position:'relative',padding:0,overflow:'hidden'}}>
+                      <div className="rq-imgs" style={{padding:'20px 24px'}}>
                         {curQ2.images.map((img,i)=>(
-                          <img key={i} src={`data:image/png;base64,${img}`} alt="" style={{maxWidth:'100%',height:'auto',display:'block',borderRadius:6}}/>
+                          <img key={i} src={`data:image/png;base64,${img}`} alt="" style={{maxWidth:'100%',height:'auto',display:'block',borderRadius:4}}/>
                         ))}
                       </div>
-                    ) : (
-                      // TEXT MODE: render question text
-                      curQ2.text&&<div className="rq-text" dangerouslySetInnerHTML={{__html:(curQ2.text||'').replace(/\n/g,'<br/>')}}/>
-                    )}
-                  </div>
-
-                  {/* Answer section — adapts to image vs text mode */}
-                  {curQ2.type==='MCQ'&&(()=>{
-                    const cor=(curQ2.correctAnswer||'').toUpperCase().trim()
-                    const yrs=(curQ2.yourAnswer||'').toUpperCase().trim()
-                    const hasOptText=['A','B','C','D'].some((_,i)=>curQ2.opts?.[i]&&curQ2.opts[i].length>1)
-                    const isImageQ=curQ2.images?.length>0
-
-                    if(isImageQ||!hasOptText){
-                      // IMAGE MODE: compact answer bar — no boxes overlapping the image
-                      const correct=cor===yrs&&!!yrs
-                      const wrong=!!yrs&&cor!==yrs
-                      const skipped=yrs==='SKIP'
-                      const notAttempted=!yrs
-                      return(
-                        <div className="rq-ans-bar">
-                          <div className="rq-ans-pill" style={{
-                            background: correct?'#e8f5e9':wrong?'#ffebee':skipped?'#fff3e0':'#f1f5f9',
-                            border: `1.5px solid ${correct?'#a5d6a7':wrong?'#ef9a9a':skipped?'#ffcc80':'#e2e8f0'}`
-                          }}>
-                            <span style={{fontSize:'.75rem',color:'#64748b',marginRight:6}}>Your Answer:</span>
-                            <span className="rq-ans-lbl" style={{
-                              background: correct?'#2e7d32':wrong?'#c62828':skipped?'#e65100':'#94a3b8',
-                              color:'white'
-                            }}>{yrs||'—'}</span>
-                            {correct&&<span style={{fontSize:'.75rem',color:'#2e7d32',marginLeft:8,fontWeight:600}}>✓ Correct</span>}
-                            {wrong&&<span style={{fontSize:'.75rem',color:'#c62828',marginLeft:8,fontWeight:600}}>✗ Wrong</span>}
-                            {(wrong||notAttempted||skipped)&&(
-                              <>
-                                <span style={{fontSize:'.75rem',color:'#94a3b8',margin:'0 8px'}}>·</span>
-                                <span style={{fontSize:'.75rem',color:'#64748b',marginRight:6}}>Correct:</span>
-                                <span className="rq-ans-lbl" style={{background:'#2e7d32',color:'white'}}>{cor||'—'}</span>
-                              </>
+                      {curQ2.type==='MCQ'&&(()=>{
+                        const cor=(curQ2.correctAnswer||'').toUpperCase().trim()
+                        const yrs=(curQ2.yourAnswer||'').toUpperCase().trim()
+                        const correct=cor===yrs&&!!yrs
+                        const wrong=!!yrs&&cor!==yrs&&yrs!=='SKIP'
+                        const skipped=yrs==='SKIP'
+                        return(
+                          <div style={{position:'sticky',bottom:0,left:0,right:0,background:correct?'#e8f5e9':wrong?'#ffebee':skipped?'#fff3e0':'#f8fafc',borderTop:`2px solid ${correct?'#a5d6a7':wrong?'#ef9a9a':skipped?'#ffcc80':'#e2e8f0'}`,padding:'10px 20px',display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}>
+                            <div style={{display:'flex',alignItems:'center',gap:8}}>
+                              <span style={{fontSize:'.78rem',color:'#64748b',fontWeight:500}}>Your Answer</span>
+                              <span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:30,height:30,borderRadius:7,background:correct?'#2e7d32':wrong?'#c62828':skipped?'#e65100':'#94a3b8',color:'white',fontFamily:"'JetBrains Mono',monospace",fontSize:'.78rem',fontWeight:800}}>{yrs||'—'}</span>
+                              {correct&&<span style={{fontSize:'.78rem',color:'#2e7d32',fontWeight:700}}>✓ Correct</span>}
+                              {wrong&&<span style={{fontSize:'.78rem',color:'#c62828',fontWeight:700}}>✗ Wrong</span>}
+                              {skipped&&<span style={{fontSize:'.78rem',color:'#e65100',fontWeight:700}}>Skipped</span>}
+                              {!yrs&&<span style={{fontSize:'.78rem',color:'#94a3b8',fontWeight:700}}>Not Attempted</span>}
+                            </div>
+                            {(wrong||!yrs||skipped)&&(
+                              <div style={{display:'flex',alignItems:'center',gap:8,marginLeft:'auto'}}>
+                                <span style={{fontSize:'.78rem',color:'#64748b',fontWeight:500}}>Correct Answer</span>
+                                <span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:30,height:30,borderRadius:7,background:'#2e7d32',color:'white',fontFamily:"'JetBrains Mono',monospace",fontSize:'.78rem',fontWeight:800}}>{cor||'—'}</span>
+                              </div>
                             )}
                           </div>
-                        </div>
-                      )
-                    }
-
-                    // TEXT MODE: full A/B/C/D option list
-                    return(
-                      <div className="rq-opts">
-                        {['A','B','C','D'].map((lbl,i)=>{
-                          const isCor=lbl===cor
-                          const isYrs=lbl===yrs
-                          return(
-                            <div key={lbl} className={`rq-opt${isCor?' cor':isYrs&&!isCor?' wrg':''}`}>
-                              <div className="rq-lbl">{lbl}</div>
-                              <div className="rq-otext">{curQ2.opts?.[i]||''}</div>
-                              <div className="rq-tags" style={{marginLeft:'auto',flexShrink:0}}>
-                                {isCor&&isYrs&&<span className="rqt green">{Ic.correct} Your Ans · Correct</span>}
-                                {isCor&&!isYrs&&<span className="rqt green">{Ic.correct} Correct</span>}
-                                {isYrs&&!isCor&&<span className="rqt red">{Ic.wrong} Your Ans</span>}
-                              </div>
-                            </div>
-                          )
-                        })}
+                        )
+                      })()}
+                    </div>
+                  ) : (
+                    // TEXT MODE: question text in body, options below
+                    <>
+                      <div className="rq-body">
+                        {curQ2.text&&<div className="rq-text" dangerouslySetInnerHTML={{__html:(curQ2.text||'').replace(/\n/g,'<br/>')}}/>}
                       </div>
-                    )
-                  })()}
+                      {curQ2.type==='MCQ'&&(()=>{
+                        const cor=(curQ2.correctAnswer||'').toUpperCase().trim()
+                        const yrs=(curQ2.yourAnswer||'').toUpperCase().trim()
+                        return(
+                          <div className="rq-opts">
+                            {['A','B','C','D'].map((lbl,i)=>{
+                              const isCor=lbl===cor
+                              const isYrs=lbl===yrs
+                              return(
+                                <div key={lbl} className={`rq-opt${isCor?' cor':isYrs&&!isCor?' wrg':''}`}>
+                                  <div className="rq-lbl">{lbl}</div>
+                                  <div className="rq-otext">{curQ2.opts?.[i]||''}</div>
+                                  <div className="rq-tags" style={{marginLeft:'auto',flexShrink:0}}>
+                                    {isCor&&isYrs&&<span className="rqt green">{Ic.correct} Your Ans · Correct</span>}
+                                    {isCor&&!isYrs&&<span className="rqt green">{Ic.correct} Correct</span>}
+                                    {isYrs&&!isCor&&<span className="rqt red">{Ic.wrong} Your Ans</span>}
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )
+                      })()}
+                    </>
+                  )}
 
                   {curQ2.type==='INTEGER'&&(
                     <div className="rq-int">
