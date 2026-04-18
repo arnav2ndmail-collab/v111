@@ -71,7 +71,22 @@ CREATE POLICY "Users manage own bookmarks"
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
--- ── 4. Auto-update updated_at on bookmarks ───────────────────
+-- ── 4. site_config (exam dates, announcements) ───────────────
+DROP TABLE IF EXISTS site_config CASCADE;
+CREATE TABLE site_config (
+  key        TEXT PRIMARY KEY,
+  value      JSONB DEFAULT '[]',
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+-- Seed with empty exams
+INSERT INTO site_config (key, value) VALUES ('exams', '[]');
+
+-- Allow public read (for exam countdown tiles on homepage)
+ALTER TABLE site_config ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public read site_config"
+  ON site_config FOR SELECT USING (true);
+
+-- ── 5. Auto-update updated_at on bookmarks ───────────────────
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN

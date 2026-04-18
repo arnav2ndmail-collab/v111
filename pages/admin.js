@@ -161,6 +161,16 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false)
   const [msg, setMsg]       = useState({txt:'',ok:true})
   const [editTest, setEditTest] = useState(null)
+  // Exams tab
+  const [exams, setExams]   = useState([])
+  const [examName, setExamName] = useState('')
+  const [examDate, setExamDate] = useState('')
+  // Users tab
+  const [users, setUsers]   = useState([])
+  const [siteStats, setSiteStats] = useState({totalAttempts:0})
+  // Announcements
+  const [whatsNew, setWhatsNew] = useState([])
+  const [wnText, setWnText]  = useState('')
 
   // BITSAT processor
   const [zipFile, setZipFile]     = useState(null)
@@ -173,7 +183,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     const t = localStorage.getItem(ADM_KEY)
-    if (t) { setTok(t); setLoggedIn(true); loadTests(t) }
+    if (t) { setTok(t); setLoggedIn(true); loadTests(t); loadSiteData(); loadUsers(t) }
   }, [])
 
   const adm = async (action, body, t) => {
@@ -195,13 +205,30 @@ export default function AdminPage() {
     setLoading(false)
   }
 
+  const loadSiteData = async () => {
+    try {
+      const r = await fetch('/api/site-stats')
+      const d = await r.json()
+      setSiteStats({ totalAttempts: d.totalAttempts||0 })
+      setExams(d.exams||[])
+      setWhatsNew(d.whatsNew||[])
+    } catch(e) {}
+  }
+
+  const loadUsers = async (t) => {
+    try {
+      const r = await fetch('/api/admin/users', { headers: { Authorization:'Bearer '+(t||tok) } })
+      if (r.ok) { const d = await r.json(); setUsers(d||[]) }
+    } catch(e) {}
+  }
+
   const login = async () => {
     setLoginErr('')
     const r = await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})})
     const d = await r.json()
     if (d.error){setLoginErr(d.error);return}
     localStorage.setItem(ADM_KEY,d.token)
-    setTok(d.token); setLoggedIn(true); loadTests(d.token)
+    setTok(d.token); setLoggedIn(true); loadTests(d.token); loadSiteData(); loadUsers(d.token)
   }
 
   const logout = () => {localStorage.removeItem(ADM_KEY);setLoggedIn(false);setTok('')}
@@ -240,6 +267,26 @@ export default function AdminPage() {
     a.click()
     URL.revokeObjectURL(url)
   }
+
+  const saveExams = async (newExams) => {
+    const email = process.env.NEXT_PUBLIC_ADMIN_EMAIL
+    await fetch('/api/site-stats', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', Authorization:'Bearer '+tok },
+      body: JSON.stringify({ exams: newExams, adminToken: tok })
+    })
+    setExams(newExams)
+    flash('✅ Exams saved!')
+  }
+
+  const addExam = () => {
+    if (!examName.trim() || !examDate) return
+    const updated = [...exams, { name: examName.trim(), date: examDate }]
+    saveExams(updated)
+    setExamName(''); setExamDate('')
+  }
+
+  const removeExam = (i) => saveExams(exams.filter((_,j)=>j!==i))
 
   const saveTest = async () => {
     const d = await adm('rename-test', editTest)
@@ -294,7 +341,14 @@ export default function AdminPage() {
             <div className="s-name">TestZyro<br/><span>Admin</span></div>
           </div>
           <nav className="sidebar-nav">
-            {[['bitsat','📦','BITSAT ZIP'],['tests','📋','All Tests'],['solutions','📄','Solutions'],['json','📤','JSON Upload']].map(([t,ic,lb])=>(
+            {[
+              ['bitsat','📦','BITSAT ZIP'],
+              ['tests','📋','All Tests'],
+              ['exams','📅','Exam Dates'],
+              ['users','👥','Users'],
+              ['solutions','📄','Solutions'],
+              ['json','📤','JSON Upload'],
+            ].map(([t,ic,lb])=>(
               <button key={t} className={`s-btn${tab===t?' on':''}`} onClick={()=>setTab(t)}>
                 <span className="s-ic">{ic}</span><span>{lb}</span>
               </button>
@@ -426,7 +480,88 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* ═══ TESTS LIST ═══ */}
+          {/* ═══ EXAM DATES ═══ */}
+          {tab==='exams' && (
+            <div className="section">
+              <div className="sec-head">
+                <h1>📅 Exam Countdown Tiles</h1>
+                <p>These appear on the main page hero as countdown cards</p>
+              </div>
+              {/* Global stats row */}
+              <div className="stat-cards">
+                <div className="stat-card">
+                  <div className="stat-card-num">{siteStats.totalAttempts.toLocaleString()}</div>
+                  <div className="stat-card-lbl">Total Tests Attempted</div>
+                </div>
+              </div>
+              {/* Add exam */}
+              <div className="format-box" style={{marginTop:20}}>
+                <div className="fb-title">Add New Exam</div>
+                <div style={{display:'flex',gap:10,flexWrap:'wrap',alignItems:'flex-end'}}>
+                  <div className="field-wrap" style={{flex:2,minWidth:160}}>
+                    <label className="flabel">Exam Name</label>
+                    <input className="finput" style={{marginBottom:0}} value={examName} onChange={e=>setExamName(e.target.value)} placeholder="e.g. BITSAT 2026"/>
+                  </div>
+                  <div className="field-wrap" style={{flex:1,minWidth:140}}>
+                    <label className="flabel">Exam Date</label>
+                    <input className="finput" style={{marginBottom:0}} type="date" value={examDate} onChange={e=>setExamDate(e.target.value)}/>
+                  </div>
+                  <button className="proc-btn" onClick={addExam} disabled={!examName.trim()||!examDate}>+ Add</button>
+                </div>
+              </div>
+              {/* Current exams */}
+              <div style={{marginTop:16,display:'flex',flexDirection:'column',gap:8}}>
+                {exams.length===0 && <div className="empty">No exams added yet</div>}
+                {exams.map((ex,i)=>{
+                  const days = Math.ceil((new Date(ex.date)-Date.now())/(1000*60*60*24))
+                  return(
+                    <div key={i} className="test-row" style={{padding:'12px 16px',display:'flex',alignItems:'center',gap:12}}>
+                      <div style={{flex:1}}>
+                        <div style={{fontWeight:700,fontSize:'.92rem',color:'#1a237e'}}>{ex.name}</div>
+                        <div style={{fontSize:'.72rem',color:'#888',marginTop:2}}>{new Date(ex.date).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})} · {days>0?`${days} days left`:days===0?'Today!':'Past'}</div>
+                      </div>
+                      <button onClick={()=>removeExam(i)} style={{background:'#ffebee',border:'1px solid #ef9a9a',color:'#c62828',padding:'6px 12px',borderRadius:7,cursor:'pointer',fontSize:'.76rem',fontWeight:600,fontFamily:'Inter,sans-serif'}}>Remove</button>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ═══ USERS ═══ */}
+          {tab==='users' && (
+            <div className="section">
+              <div className="sec-head">
+                <h1>👥 Users & Activity</h1>
+                <p>Registered users and their test activity</p>
+              </div>
+              <div className="stat-cards" style={{marginBottom:24}}>
+                <div className="stat-card"><div className="stat-card-num">{users.length}</div><div className="stat-card-lbl">Registered Users</div></div>
+                <div className="stat-card"><div className="stat-card-num">{siteStats.totalAttempts.toLocaleString()}</div><div className="stat-card-lbl">Total Attempts</div></div>
+                <div className="stat-card"><div className="stat-card-num">{users.length>0?(siteStats.totalAttempts/users.length).toFixed(1):0}</div><div className="stat-card-lbl">Avg per User</div></div>
+              </div>
+              <button className="refresh-btn" onClick={()=>loadUsers()}>🔄 Refresh</button>
+              <div style={{display:'flex',flexDirection:'column',gap:8,marginTop:12}}>
+                {users.length===0&&<div className="empty">No users found</div>}
+                {users.map((u,i)=>(
+                  <div key={i} className="test-row" style={{padding:'12px 16px',display:'flex',alignItems:'center',gap:12}}>
+                    <div style={{width:36,height:36,borderRadius:10,background:'#e8eaf6',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:800,color:'#1a237e',fontSize:'.9rem',flexShrink:0}}>
+                      {(u.email||'?')[0].toUpperCase()}
+                    </div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontWeight:600,fontSize:'.88rem',color:'#1a237e',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{u.email}</div>
+                      <div style={{fontSize:'.68rem',color:'#aaa',marginTop:2}}>Joined {u.created_at?new Date(u.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'—'}</div>
+                    </div>
+                    <div style={{background:'#f0f3ff',border:'1px solid #e0e4ff',borderRadius:8,padding:'4px 10px',fontSize:'.72rem',fontWeight:700,color:'#3949ab',flexShrink:0}}>
+                      {u.attempt_count||0} tests
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* existing tabs below */}
           {tab==='tests' && (
             <div className="section">
               <div className="sec-head">
@@ -625,7 +760,12 @@ const PANEL = `
 .result-ok-title{font-size:1.05rem;font-weight:800;color:#1b5e20;margin-bottom:3px}
 .result-ok-sub{font-size:.8rem;color:#2e7d32}
 .result-stats{padding:16px 22px;display:flex;gap:8px;flex-wrap:wrap;border-bottom:1px solid #e8f5e9}
-.stat-pill{background:#f1f8f3;border:1px solid #c8e6c9;border-radius:20px;padding:6px 14px;display:flex;align-items:center;gap:6px}
+/* Stat cards */
+.stat-cards{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+.stat-card{background:white;border:1px solid #e8eaf6;border-radius:14px;padding:16px 20px;flex:1;min-width:120px;box-shadow:0 2px 8px rgba(26,35,126,.06)}
+.stat-card-num{font-size:1.8rem;font-weight:900;color:#1a237e;line-height:1}
+.stat-card-lbl{font-size:.68rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.8px;margin-top:6px}
+/* Stat pills (existing) */
 .stat-subj{font-weight:700;font-size:.78rem;color:#1b5e20}
 .stat-n{font-size:.74rem;color:#555}
 .stat-img{font-size:.7rem;color:#888}

@@ -88,6 +88,8 @@ export default function Karle() {
   const [activeFolder, setActiveFolder] = useState(null)
   const [sbUser, setSbUser]         = useState(null)
   const [storageErr, setStorageErr]  = useState('')
+  const [globalStats, setGlobalStats] = useState({ totalAttempts: 0 })
+  const [exams, setExams]            = useState([])
 
   const timerRef  = useRef(null)
   const startRef  = useRef(null)
@@ -102,6 +104,10 @@ export default function Karle() {
   useEffect(() => {
     setSavedTests(JSON.parse(localStorage.getItem(SAVED_KEY)||'[]'))
     setAttempts(JSON.parse(localStorage.getItem(ATTEMPTS_KEY)||'[]'))
+    // Load global stats + exam countdowns
+    fetch('/api/site-stats').then(r=>r.ok?r.json():null).then(d=>{
+      if(d){ setGlobalStats({ totalAttempts: d.totalAttempts||0 }); setExams(d.exams||[]) }
+    }).catch(()=>{})
     // Check Supabase session + load cloud attempts + bookmarks
     if (isSupabaseReady()) {
       getSupabase().auth.getSession().then(async ({ data }) => {
@@ -175,7 +181,7 @@ export default function Karle() {
       }
       setTree(merged)
       const keys = Object.keys(merged.folders||{})
-      if (keys.length) { setOpenFolders({ [keys[0]]: true }); setActiveFolder(keys[0]) }
+      if (keys.length) setOpenFolders({ [keys[0]]: true })
     } catch(e) { console.warn('loadTree error:', e.message) }
     setTreeLoad(false)
   }
@@ -824,13 +830,39 @@ export default function Karle() {
             {/* Hero typewriter */}
             {!activeFolder && <HeroTypewriter/>}
 
-            {/* Stats */}
-            {!activeFolder && myTestsGiven > 0 && (
+            {/* Exam countdown tiles */}
+            {!activeFolder && exams.length>0 && (
+              <div className="exam-tiles">
+                {exams.map((ex,i)=>{
+                  const days = Math.ceil((new Date(ex.date)-Date.now())/(1000*60*60*24))
+                  const urgent = days<=7
+                  const past = days<0
+                  return(
+                    <div key={i} className={`exam-tile${urgent?' urgent':''}`}>
+                      <div className="exam-tile-name">{ex.name}</div>
+                      <div className="exam-tile-days">
+                        {past ? 'Completed' : <><span className="exam-tile-num">{days}</span> days left</>}
+                      </div>
+                      <div className="exam-tile-date">{new Date(ex.date).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* Stats row */}
+            {!activeFolder && (
               <div className="stats-bar">
                 <div className="stat-item">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-                  <span><strong>{myTestsGiven}</strong> test{myTestsGiven!==1?'s':''} given by you</span>
+                  <span className="stat-live-dot"/>
+                  <span><strong>{globalStats.totalAttempts.toLocaleString()}</strong> tests attempted on Karle</span>
                 </div>
+                {myTestsGiven > 0 && (
+                  <div className="stat-item">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                    <span><strong>{myTestsGiven}</strong> by you</span>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1426,7 +1458,18 @@ body{background:#0a0e1a;color:#f1f5f9;font-family:'Inter',sans-serif;min-height:
 .btn-back-lib{background:transparent;border:1.5px solid #2d3748;color:#64748b}
 .btn-back-lib:hover{border-color:#6366f1;color:#6366f1}
 .res-download-note{font-size:.68rem;color:#334155;text-align:center;margin-top:10px}
-
+/* Exam countdown tiles */
+.exam-tiles{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:4px}
+.exam-tile{background:#131c2e;border:1px solid #2d3748;border-radius:12px;padding:14px 18px;min-width:140px;flex:1;max-width:220px}
+.exam-tile.urgent{border-color:#f59e0b;background:#1c1a0e}
+.exam-tile-name{font-size:.68rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.exam-tile-days{font-size:.9rem;font-weight:700;color:#e2e8f0;display:flex;align-items:baseline;gap:4px}
+.exam-tile-num{font-size:1.8rem;font-weight:900;color:#6366f1;line-height:1}
+.exam-tile.urgent .exam-tile-num{color:#f59e0b}
+.exam-tile-date{font-size:.65rem;color:#475569;margin-top:4px}
+/* Live dot */
+.stat-live-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0;animation:live-pulse 2s ease-in-out infinite}
+@keyframes live-pulse{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.5)}50%{box-shadow:0 0 0 6px rgba(34,197,94,0)}}
 /* Hero typewriter */
 .hero-tw{background:linear-gradient(135deg,#1a237e,#312e81);border-radius:14px;padding:24px 28px;overflow:hidden;position:relative;border:1px solid #2d3748}
 .hero-tw::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 80% 50%,rgba(99,102,241,.2),transparent 60%)}
