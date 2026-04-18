@@ -750,7 +750,7 @@ const APP_CSS = `
 .rq-bm{background:#fff8e1;border:1px solid #ffe082;color:#e65100;padding:6px 10px;border-radius:6px;cursor:pointer;display:flex;align-items:center}
 .rq-bm:hover{background:#fef3c7}
 .rq-badge{display:flex;align-items:center;gap:5px;font-size:.74rem;font-weight:700;padding:5px 12px;border-radius:20px}
-.rq-body{background:white;border:1px solid #e2e8f0;border-radius:12px;padding:20px 24px 24px;min-height:60px;display:block;overflow:hidden}
+.rq-body{background:white;border:1px solid #e2e8f0;border-radius:12px;padding:20px 24px 24px;min-height:60px;display:block}
 .rq-imgs{display:flex;flex-direction:column;align-items:flex-start;gap:10px}
 .rq-imgs img{max-width:100%;height:auto;display:block;border-radius:4px}
 .rq-text{font-size:1rem;line-height:2.1;color:#1e293b;white-space:pre-wrap}
