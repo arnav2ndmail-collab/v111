@@ -750,18 +750,18 @@ const APP_CSS = `
 .rq-bm{background:#fff8e1;border:1px solid #ffe082;color:#e65100;padding:6px 10px;border-radius:6px;cursor:pointer;display:flex;align-items:center}
 .rq-bm:hover{background:#fef3c7}
 .rq-badge{display:flex;align-items:center;gap:5px;font-size:.74rem;font-weight:700;padding:5px 12px;border-radius:20px}
-.rq-body{background:white;border:1px solid #e2e8f0;border-radius:12px;padding:20px 24px;min-height:60px;display:block}
+.rq-body{background:white;border:1px solid #e2e8f0;border-radius:12px;padding:20px 24px 24px;min-height:60px;display:block;overflow:hidden}
 .rq-imgs{display:flex;flex-direction:column;align-items:flex-start;gap:10px}
 .rq-imgs img{max-width:100%;height:auto;display:block;border-radius:4px}
 .rq-text{font-size:1rem;line-height:2.1;color:#1e293b;white-space:pre-wrap}
-.rq-opts{display:flex;flex-direction:column;gap:8px;margin-top:0;clear:both}
+.rq-opts{display:flex;flex-direction:column;gap:8px;margin-top:12px;clear:both}
 .rq-opt{display:flex;align-items:center;gap:12px;background:white;border:1.5px solid #e2e8f0;border-radius:10px;padding:12px 16px;transition:all .12s}
 .rq-opt.cor{border-color:#10b981!important;background:#f0fdf4!important}
 .rq-opt.wrg{border-color:#ef4444!important;background:#fef2f2!important}
 .rq-lbl{width:32px;height:32px;border-radius:7px;background:#f1f5f9;border:1.5px solid #e2e8f0;color:#475569;font-family:'JetBrains Mono',monospace;font-size:.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .rq-opt.cor .rq-lbl{background:#2e7d32;border-color:#2e7d32;color:white}
 .rq-opt.wrg .rq-lbl{background:#c62828;border-color:#c62828;color:white}
-.rq-otext{flex:1;font-size:.88rem;color:#e2e8f0;line-height:1.6;padding-top:2px}
+.rq-otext{flex:1;font-size:.88rem;color:#1e293b;line-height:1.6;padding-top:2px}
 .rq-tags{display:flex;flex-direction:column;gap:3px;align-items:flex-end;flex-shrink:0;padding-top:2px}
 .rqt{display:flex;align-items:center;gap:4px;font-size:.6rem;font-weight:700;padding:2px 8px;border-radius:8px;white-space:nowrap}
 .rqt.green{background:#dcfce7;color:#15803d;border:1px solid #86efac}
