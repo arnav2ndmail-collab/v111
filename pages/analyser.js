@@ -584,37 +584,80 @@ export default function Analyser() {
                     </div>
                   </div>
 
-                  {/* Content — image always first, then options */}
+                  {/* Content */}
                   <div className="rq-body">
-                    {curQ2.images?.length>0&&(
-                      <div className="rq-imgs">{curQ2.images.map((img,i)=><img key={i} src={`data:image/png;base64,${img}`} alt="" style={{maxWidth:'100%',display:'block',margin:'0 auto 8px',borderRadius:8}}/>)}</div>
-                    )}
-                    {!curQ2.images?.length&&curQ2.text&&(
-                      <div className="rq-text" dangerouslySetInnerHTML={{__html:(curQ2.text||'').replace(/\n/g,'<br/>')}}/>
+                    {curQ2.images?.length>0 ? (
+                      // IMAGE MODE: full image renders naturally, no overlap
+                      <div className="rq-imgs">
+                        {curQ2.images.map((img,i)=>(
+                          <img key={i} src={`data:image/png;base64,${img}`} alt="" style={{maxWidth:'100%',height:'auto',display:'block',borderRadius:6}}/>
+                        ))}
+                      </div>
+                    ) : (
+                      // TEXT MODE: render question text
+                      curQ2.text&&<div className="rq-text" dangerouslySetInnerHTML={{__html:(curQ2.text||'').replace(/\n/g,'<br/>')}}/>
                     )}
                   </div>
 
-                  {/* Options always show below - even for image questions so user can see their answer */}
-                  {curQ2.type==='MCQ'&&(
-                    <div className="rq-opts">
-                      {['A','B','C','D'].map((lbl,i)=>{
-                        const isCor=lbl===(curQ2.correctAnswer||'').toUpperCase().trim()
-                        const isYrs=lbl===(curQ2.yourAnswer||'').toUpperCase().trim()
-                        const hasText = curQ2.opts?.[i] && curQ2.opts[i].length > 1
-                        return(
-                          <div key={lbl} className={`rq-opt${isCor?' cor':isYrs&&!isCor?' wrg':''}`}>
-                            <div className="rq-lbl">{lbl}</div>
-                            {hasText && <div className="rq-otext">{curQ2.opts[i]}</div>}
-                            <div className="rq-tags" style={{marginLeft:'auto'}}>
-                              {isCor&&isYrs&&<span className="rqt green">{Ic.correct} Your Ans · Correct</span>}
-                              {isCor&&!isYrs&&<span className="rqt green">{Ic.correct} Correct</span>}
-                              {isYrs&&!isCor&&<span className="rqt red">{Ic.wrong} Your Ans</span>}
-                            </div>
+                  {/* Answer section — adapts to image vs text mode */}
+                  {curQ2.type==='MCQ'&&(()=>{
+                    const cor=(curQ2.correctAnswer||'').toUpperCase().trim()
+                    const yrs=(curQ2.yourAnswer||'').toUpperCase().trim()
+                    const hasOptText=['A','B','C','D'].some((_,i)=>curQ2.opts?.[i]&&curQ2.opts[i].length>1)
+                    const isImageQ=curQ2.images?.length>0
+
+                    if(isImageQ||!hasOptText){
+                      // IMAGE MODE: compact answer bar — no boxes overlapping the image
+                      const correct=cor===yrs&&!!yrs
+                      const wrong=!!yrs&&cor!==yrs
+                      const skipped=yrs==='SKIP'
+                      const notAttempted=!yrs
+                      return(
+                        <div className="rq-ans-bar">
+                          <div className="rq-ans-pill" style={{
+                            background: correct?'#e8f5e9':wrong?'#ffebee':skipped?'#fff3e0':'#f1f5f9',
+                            border: `1.5px solid ${correct?'#a5d6a7':wrong?'#ef9a9a':skipped?'#ffcc80':'#e2e8f0'}`
+                          }}>
+                            <span style={{fontSize:'.75rem',color:'#64748b',marginRight:6}}>Your Answer:</span>
+                            <span className="rq-ans-lbl" style={{
+                              background: correct?'#2e7d32':wrong?'#c62828':skipped?'#e65100':'#94a3b8',
+                              color:'white'
+                            }}>{yrs||'—'}</span>
+                            {correct&&<span style={{fontSize:'.75rem',color:'#2e7d32',marginLeft:8,fontWeight:600}}>✓ Correct</span>}
+                            {wrong&&<span style={{fontSize:'.75rem',color:'#c62828',marginLeft:8,fontWeight:600}}>✗ Wrong</span>}
+                            {(wrong||notAttempted||skipped)&&(
+                              <>
+                                <span style={{fontSize:'.75rem',color:'#94a3b8',margin:'0 8px'}}>·</span>
+                                <span style={{fontSize:'.75rem',color:'#64748b',marginRight:6}}>Correct:</span>
+                                <span className="rq-ans-lbl" style={{background:'#2e7d32',color:'white'}}>{cor||'—'}</span>
+                              </>
+                            )}
                           </div>
-                        )
-                      })}
-                    </div>
-                  )}
+                        </div>
+                      )
+                    }
+
+                    // TEXT MODE: full A/B/C/D option list
+                    return(
+                      <div className="rq-opts">
+                        {['A','B','C','D'].map((lbl,i)=>{
+                          const isCor=lbl===cor
+                          const isYrs=lbl===yrs
+                          return(
+                            <div key={lbl} className={`rq-opt${isCor?' cor':isYrs&&!isCor?' wrg':''}`}>
+                              <div className="rq-lbl">{lbl}</div>
+                              <div className="rq-otext">{curQ2.opts?.[i]||''}</div>
+                              <div className="rq-tags" style={{marginLeft:'auto',flexShrink:0}}>
+                                {isCor&&isYrs&&<span className="rqt green">{Ic.correct} Your Ans · Correct</span>}
+                                {isCor&&!isYrs&&<span className="rqt green">{Ic.correct} Correct</span>}
+                                {isYrs&&!isCor&&<span className="rqt red">{Ic.wrong} Your Ans</span>}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )
+                  })()}
 
                   {curQ2.type==='INTEGER'&&(
                     <div className="rq-int">
@@ -754,7 +797,10 @@ const APP_CSS = `
 .rq-imgs{display:flex;flex-direction:column;align-items:flex-start;gap:10px}
 .rq-imgs img{max-width:100%;height:auto;display:block;border-radius:4px}
 .rq-text{font-size:1rem;line-height:2.1;color:#1e293b;white-space:pre-wrap}
-.rq-opts{display:flex;flex-direction:column;gap:8px;margin-top:12px;clear:both}
+.rq-ans-bar{margin-top:12px}
+.rq-ans-pill{display:inline-flex;align-items:center;padding:10px 16px;border-radius:10px;gap:4px;flex-wrap:wrap}
+.rq-ans-lbl{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:.75rem;font-weight:800}
+.rq-opts{display:flex;flex-direction:column;gap:8px;margin-top:12px}
 .rq-opt{display:flex;align-items:center;gap:12px;background:white;border:1.5px solid #e2e8f0;border-radius:10px;padding:12px 16px;transition:all .12s}
 .rq-opt.cor{border-color:#10b981!important;background:#f0fdf4!important}
 .rq-opt.wrg{border-color:#ef4444!important;background:#fef2f2!important}
