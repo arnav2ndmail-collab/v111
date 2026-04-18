@@ -102,10 +102,28 @@ export default function Karle() {
   useEffect(() => {
     setSavedTests(JSON.parse(localStorage.getItem(SAVED_KEY)||'[]'))
     setAttempts(JSON.parse(localStorage.getItem(ATTEMPTS_KEY)||'[]'))
-    // Check Supabase session
+    // Check Supabase session + load cloud attempts
     if (isSupabaseReady()) {
-      getSupabase().auth.getSession().then(({ data }) => {
-        if (data.session) setSbUser(data.session.user)
+      getSupabase().auth.getSession().then(async ({ data }) => {
+        if (data.session) {
+          setSbUser(data.session.user)
+          try {
+            const r = await fetch('/api/cloud-attempts', {
+              headers: { Authorization: `Bearer ${data.session.access_token}` }
+            })
+            if (r.ok) {
+              const cloudAttempts = await r.json()
+              if (Array.isArray(cloudAttempts) && cloudAttempts.length > 0) {
+                const local = JSON.parse(localStorage.getItem(ATTEMPTS_KEY)||'[]')
+                const cloudIds = new Set(cloudAttempts.map(a => a.testId))
+                const localOnly = local.filter(a => !cloudIds.has(a.testId))
+                const merged = [...cloudAttempts, ...localOnly].slice(0, 50)
+                setAttempts(merged)
+                localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(merged))
+              }
+            }
+          } catch(e) { console.warn('Cloud attempts load failed:', e.message) }
+        }
       })
     }
     // Load resume
@@ -378,31 +396,36 @@ export default function Karle() {
     }
     const updated = saveAttempt(attempt)
     setAttempts(updated)
-    // Save to Supabase directly from client (no API route needed)
+    // Save to cloud via server-side API (uses service role key, works cross-device)
     if (isSupabaseReady() && sbUser) {
       try {
         const sb = getSupabase()
-        await sb.from('test_attempts').insert({
-          user_id: sbUser.id,
-          test_id: cfg.id || cfg.testPath || cfg.title,
-          test_path: cfg.testPath || cfg.id || '',
-          test_title: cfg.title || 'Test',
-          subject: cfg.subject || 'BITSAT',
-          score: res.score || 0,
-          max_score: res.max || 0,
-          correct: res.cor || 0,
-          wrong: res.wrg || 0,
-          skipped: res.skp || 0,
-          unattempted: res.un || 0,
-          accuracy: res.pct || 0,
-          duration: res.elapsed || 0,
-          marks_correct: cfg.mCor || 3,
-          marks_wrong: cfg.mNeg || 1,
-          subj_stats: res.subjStats || {},
-          answers: finalAns.map((a,i)=>({yourAnswer:a,correctAnswer:Qs[i]?.ans,result:!a?'unattempted':a==='skip'?'skipped':((Qs[i]?.ans||'').toUpperCase().trim()===(a||'').toUpperCase().trim())?'correct':'wrong'})),
-          taken_at: new Date().toISOString()
-        })
-      } catch(e) { console.warn('Supabase save failed:', e.message) }
+        const { data: { session } } = await sb.auth.getSession()
+        if (session?.access_token) {
+          await fetch('/api/cloud-attempts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+            body: JSON.stringify({
+              testId: cfg.id || cfg.testPath || cfg.title,
+              testPath: cfg.testPath || cfg.id || '',
+              testTitle: cfg.title || 'Test',
+              subject: cfg.subject || 'BITSAT',
+              score: res.score || 0, maxScore: res.max || 0,
+              correct: res.cor || 0, wrong: res.wrg || 0,
+              skipped: res.skp || 0, unattempted: res.un || 0,
+              accuracy: res.pct || 0, duration: res.elapsed || 0,
+              marksCorrect: cfg.mCor || 3, marksWrong: cfg.mNeg || 1,
+              subjStats: res.subjStats || {},
+              answers: finalAns.map((a,i)=>({
+                yourAnswer: a,
+                correctAnswer: Qs[i]?.ans,
+                result: !a ? 'unattempted' : a==='skip' ? 'skipped'
+                  : ((Qs[i]?.ans||'').toUpperCase().trim()===(a||'').toUpperCase().trim()) ? 'correct' : 'wrong'
+              }))
+            })
+          })
+        }
+      } catch(e) { console.warn('Cloud save failed:', e.message) }
     }
     // Increment global counter
     try {

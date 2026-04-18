@@ -156,10 +156,47 @@ export default function Analyser() {
     setLoading(true)
     const run=async()=>{
       try{
-        const stored=sessionStorage.getItem('tz_analyse')
-        if(!stored||stored==='null'){setErr('No test data found. Please upload a result file.');setLoading(false);return}
-        const meta=JSON.parse(stored)
         const tp=params.get('tp')?decodeURIComponent(params.get('tp')):''
+
+        // ── Step 1: try sessionStorage (same-tab flow) ──────────────────────
+        let meta=null
+        const stored=sessionStorage.getItem('tz_analyse')
+        if(stored&&stored!=='null'){
+          try{ meta=JSON.parse(stored) }catch(e){}
+        }
+
+        // ── Step 2: if no sessionStorage, try cloud (cross-device flow) ─────
+        if(!meta&&tp){
+          try{
+            // Need a Supabase session to hit the cloud API
+            const { createClient } = await import('@supabase/supabase-js')
+            const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+            const sbKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+            if(sbUrl&&sbKey){
+              const sb = createClient(sbUrl, sbKey)
+              const { data: { session } } = await sb.auth.getSession()
+              if(session?.access_token){
+                const r = await fetch('/api/cloud-attempts', {
+                  headers: { Authorization: `Bearer ${session.access_token}` }
+                })
+                if(r.ok){
+                  const cloudAttempts = await r.json()
+                  // Match by testPath or testId
+                  const found = cloudAttempts.find(a =>
+                    a.testPath === tp || a.testId === tp ||
+                    ('__storage__'+a.testPath) === tp ||
+                    a.testPath === '__storage__'+tp
+                  )
+                  if(found) meta = found
+                }
+              }
+            }
+          }catch(e){ console.warn('Cloud attempt fetch:', e.message) }
+        }
+
+        if(!meta){ setErr('No test data found. Please log in or upload a result file.'); setLoading(false); return }
+
+        // ── Step 3: load questions from test file (re-fetch for image tests) ─
         let questions
         if(tp&&!tp.startsWith('json_')){
           const r=await fetch(`/api/test/${tp}`)
@@ -174,16 +211,18 @@ export default function Analyser() {
               result:!yourAns?'unattempted':yourAns==='skip'?'skipped':correct===yours?'correct':'wrong'}
           })
         } else {
-          questions=meta.answers?.map((a,i)=>({
-            qnum:i+1,subject:'Other',type:'MCQ',
+          questions=(meta.answers||[]).map((a,i)=>({
+            qnum:i+1,subject:a.subject||'Other',type:'MCQ',
             yourAnswer:a.yourAnswer,correctAnswer:a.correctAnswer,result:a.result
-          }))||[]
+          }))
         }
-        processData({testTitle:meta.testTitle,subject:meta.subject,date:meta.date,
+        processData({
+          testTitle:meta.testTitle,subject:meta.subject,date:meta.date,
           score:meta.score,maxScore:meta.maxScore,accuracy:meta.accuracy,
           correct:meta.correct,wrong:meta.wrong,skipped:meta.skipped,unattempted:meta.unattempted,
           duration:meta.duration,marksCorrect:meta.marksCorrect,marksWrong:meta.marksWrong,
-          subjStats:meta.subjStats,questions})
+          subjStats:meta.subjStats,questions
+        })
       }catch(e){setErr('Could not load: '+e.message)}
       setLoading(false)
     }; run()
