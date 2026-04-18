@@ -41,7 +41,7 @@ export default function Solutions() {
   return (
     <>
       <Head>
-        <title>TestZyro — Solutions</title>
+        <title>Karle — Solutions</title>
         <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet"/>
       </Head>
       <style>{CSS}</style>

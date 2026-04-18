@@ -15,7 +15,7 @@ export default function Migrate() {
     const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'})
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a'); a.href=url
-    a.download = `testzyro_backup_${new Date().toISOString().slice(0,10)}.json`
+    a.download = `karle_backup_${new Date().toISOString().slice(0,10)}.json`
     a.click(); URL.revokeObjectURL(url)
     setStatus('✅ Exported successfully! Save this file safely.')
   }
@@ -34,7 +34,7 @@ export default function Migrate() {
 
   return (
     <>
-      <Head><title>TestZyro — Migrate Data</title>
+      <Head><title>Karle — Migrate Data</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
       </Head>
       <style>{`
@@ -61,13 +61,13 @@ export default function Migrate() {
         .wm-dot{width:6px;height:6px;border-radius:50%;background:#1565c0;flex-shrink:0}
       `}</style>
       <header className="hdr">
-        <a href="/" className="hdr-logo">Test<span>Zyro</span></a>
+        <a href="/" className="hdr-logo">Kar<span>le</span></a>
         <a href="/" className="hdr-back">← Back</a>
       </header>
       <div className="wrap">
         <div className="card">
           <h1>Device Migration</h1>
-          <p className="sub">Export all your TestZyro data (test attempts, bookmarks, saved tests) and import it on a new device or browser.</p>
+          <p className="sub">Export all your Karle data (test attempts, bookmarks, saved tests) and import it on a new device or browser.</p>
 
           <div className="section">
             <div className="section-title">What gets migrated</div>

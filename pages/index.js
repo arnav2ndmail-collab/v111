@@ -61,7 +61,7 @@ function saveAttempt(attempt) {
   } catch(e) { return [] }
 }
 
-export default function TestZyro() {
+export default function Karle() {
   const [page, setPage]             = useState('library')
   const [tree, setTree]             = useState({ folders:{}, tests:[] })
   const [savedTests, setSavedTests] = useState([])
@@ -86,7 +86,8 @@ export default function TestZyro() {
   const [cbtLoading, setCbtLoading] = useState(false)
   const [attempts, setAttempts]     = useState([])
   const [activeFolder, setActiveFolder] = useState(null)
-  const [sbUser, setSbUser]         = useState(null) // logged-in Supabase user
+  const [sbUser, setSbUser]         = useState(null)
+  const [storageErr, setStorageErr]  = useState('')
 
   const timerRef  = useRef(null)
   const startRef  = useRef(null)
@@ -129,7 +130,7 @@ export default function TestZyro() {
           const BUCKET = 'tests'
           // Use REST API directly — more reliable than JS SDK for listing
           const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-          const sbKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+          const sbKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
           const headers = { 'apikey': sbKey, 'Authorization': `Bearer ${sbKey}`, 'Content-Type': 'application/json' }
           
           // List top-level items
@@ -179,7 +180,7 @@ export default function TestZyro() {
               })
             }
           }
-        } catch(e) { console.warn('Supabase Storage:', e.message) }
+        } catch(e) { console.warn('Supabase Storage:', e.message); setStorageErr(e.message) }
       }
       setTree(merged)
       const keys = Object.keys(merged.folders||{})
@@ -724,8 +725,8 @@ export default function TestZyro() {
   return (
     <>
       <Head>
-        <title>TestZyro — BITSAT CBT</title>
-        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%231a237e'/><text y='24' x='4' font-size='22' font-weight='900' fill='%23fdd835' font-family='Arial'>TZ</text></svg>"/>
+        <title>Karle — BITSAT Practice Platform</title>
+        <link rel="icon" href="/logo.svg"/>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
       </Head>
       <style>{CSS}</style>
@@ -761,10 +762,19 @@ export default function TestZyro() {
               </>}
             </div>
             <div className="lib-sidebar-footer">
-              <button className="btn-sm" onClick={loadTree} style={{width:'100%',justifyContent:'center'}}>
+              <button className="btn-sm" onClick={loadTree} style={{width:'100%',justifyContent:'center',marginBottom:6}}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
                 Refresh Tests
               </button>
+              {storageErr&&(
+                <div style={{background:'rgba(239,68,68,.1)',border:'1px solid rgba(239,68,68,.3)',borderRadius:8,padding:'8px 10px',marginBottom:6}}>
+                  <div style={{fontSize:'.6rem',color:'#f87171',fontWeight:700,marginBottom:3}}>⚠ Storage Error</div>
+                  <div style={{fontSize:'.58rem',color:'#f87171',wordBreak:'break-all',lineHeight:1.4}}>{storageErr}</div>
+                  <div style={{fontSize:'.58rem',color:'#64748b',marginTop:4,lineHeight:1.5}}>
+                    Add <code style={{background:'rgba(255,255,255,.1)',padding:'1px 4px',borderRadius:3}}>SUPABASE_SERVICE_ROLE_KEY</code> to Vercel env vars — anon key cannot list Storage files.
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -823,7 +833,7 @@ export default function TestZyro() {
           <DropZone multi onFiles={onJsonFiles}>
             <div className="up-icon">📋</div>
             <div className="up-title">Drop .json test files here</div>
-            <div className="up-sub">TestZyro format JSON files</div>
+            <div className="up-sub">Karle format JSON files</div>
             <label htmlFor="json-inp" className="btn-primary" style={{cursor:'pointer',display:'inline-block',padding:'9px 24px'}}>Choose JSON File(s)</label>
             <input id="json-inp" type="file" accept=".json" multiple style={{display:'none'}} onChange={e=>e.target.files.length&&onJsonFiles(Array.from(e.target.files))}/>
           </DropZone>

@@ -1,19 +1,30 @@
-# Add these in Vercel → Project Settings → Environment Variables
+# Karle — Vercel Environment Variables
 
-| Variable Name | Value |
-|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | `https://hzmtzqrozgtdkpkcedql.supabase.co` |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | (your publishable key from Supabase Settings → API) |
+Add these in: Vercel → Project → Settings → Environment Variables
 
-## Steps:
-1. Go to vercel.com → your project → Settings → Environment Variables
-2. Add both variables above
-3. Redeploy (Deployments → click latest → Redeploy)
+| Variable | Value | Required for |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://kgqxukyytpvmblypuaxw.supabase.co` | Everything |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | `sb_publishable_MGWDvr...` | Login, saving scores |
+| `SUPABASE_SERVICE_ROLE_KEY` | `eyJ...` (from Supabase Settings → API → service_role) | **Loading tests from Storage** |
 
-## Get your key:
-Supabase Dashboard → Settings (gear icon) → API
-→ Copy "Project URL" and "anon public" key
+## Why two keys?
+- **Publishable key** = safe to expose in browser. Used for login, saving test attempts.
+- **Service role key** = secret, powerful. Used SERVER-SIDE to list files in Storage.
+  The anon key cannot list private storage files — that's why tests weren't showing.
 
-## IMPORTANT - Disable email confirmation:
-Supabase → Authentication → Settings → Email Auth
-→ "Enable email confirmations" → OFF → Save
+## Get Service Role Key:
+1. Supabase Dashboard → Settings (gear icon) → API
+2. Under "Project API keys" → copy **service_role** key (starts with `eyJ...`)
+3. Add to Vercel as `SUPABASE_SERVICE_ROLE_KEY`
+4. Redeploy
+
+## Upload Tests to Storage:
+1. Supabase → Storage → Create bucket "tests" (set to PUBLIC)  
+2. Create folder: `BITSAT/`
+3. Upload `.json` test files inside `BITSAT/`
+4. Tests appear in Karle library automatically
+
+## Supabase Auth Setup:
+- Authentication → Settings → Email Auth → "Enable email confirmations" → **OFF**
+- Run `supabase-schema.sql` in SQL Editor

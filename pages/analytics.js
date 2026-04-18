@@ -74,7 +74,7 @@ export default function Analytics() {
   return (
     <>
       <Head>
-        <title>Analytics — TestZyro</title>
+        <title>Analytics — Karle</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
       </Head>
       <style>{`
@@ -201,8 +201,8 @@ export default function Analytics() {
 
       {/* LEFT ICON SIDEBAR */}
       <div className="sidebar">
-        <a href="/" className="sb-logo">TZ</a>
-        <div className="sb-logo-txt">TestZyro</div>
+        <a href="/" className="sb-logo">K</a>
+        <div className="sb-logo-txt">Karle</div>
 
         {[
           { href:'/', label:'Home', icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> },
@@ -241,7 +241,7 @@ export default function Analytics() {
               <div className="pack-selector">
                 <div className="pack-label">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-                  All TestZyro Tests
+                  All Karle Tests
                 </div>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
               </div>

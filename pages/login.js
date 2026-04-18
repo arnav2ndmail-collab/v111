@@ -52,7 +52,7 @@ export default function Login() {
   return (
     <>
       <Head>
-        <title>{mode === 'login' ? 'Log In' : 'Sign Up'} — TestZyro</title>
+        <title>{mode === 'login' ? 'Log In' : 'Sign Up'} — Karle</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
       </Head>
       <style>{`
@@ -61,7 +61,7 @@ export default function Login() {
         .wrap{width:100%;max-width:400px}
         .logo-row{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:32px}
         .lm{width:44px;height:44px;background:#6366f1;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.9rem;color:white}
-        .lt{font-weight:800;font-size:1.3rem;color:white}.lt span{color:#6366f1}
+        .lt{font-weight:800;font-size:1.3rem;color:white}.lt span{color:#10b981}
         .card{background:#141927;border:1px solid #1e293b;border-radius:18px;padding:32px}
         .tabs{display:flex;gap:0;margin-bottom:24px;background:#0a0e1a;border-radius:10px;padding:4px}
         .tab{flex:1;padding:9px;border-radius:7px;text-align:center;font-size:.85rem;font-weight:600;cursor:pointer;color:#64748b;transition:all .15s;border:none;background:transparent;font-family:'Inter',sans-serif}
@@ -82,8 +82,8 @@ export default function Login() {
       `}</style>
       <div className="wrap">
         <div className="logo-row">
-          <div className="lm">TZ</div>
-          <span className="lt">Test<span>Zyro</span></span>
+          <div className="lm">K</div>
+          <span className="lt">Kar<span>le</span></span>
         </div>
         <div className="card">
           <div className="tabs">
