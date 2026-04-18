@@ -123,61 +123,23 @@ export default function Karle() {
       // Load from local /api/tests (public/tests folder)
       const r = await fetch('/api/tests'); const d = await r.json()
       let merged = d
-      // Also try loading from Supabase Storage if configured
+      // Also try loading from Supabase Storage via server-side API route
+      // (service role key is only available server-side, never in the browser)
       if (isSupabaseReady()) {
         try {
-          const sb = getSupabase()
-          const BUCKET = 'tests'
-          // Use REST API directly — more reliable than JS SDK for listing
-          const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-          const sbKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-          const headers = { 'apikey': sbKey, 'Authorization': `Bearer ${sbKey}`, 'Content-Type': 'application/json' }
-          
-          // List top-level items
-          const topRes = await fetch(`${sbUrl}/storage/v1/object/list/${BUCKET}`, {
-            method: 'POST', headers,
-            body: JSON.stringify({ limit: 200, offset: 0, prefix: '', delimiter: '/' })
-          })
-          if (!topRes.ok) throw new Error('Storage list failed')
-          const topItems = await topRes.json()
-          
-          for (const item of (Array.isArray(topItems) ? topItems : [])) {
-            if (item.name && !item.id) {
-              // It's a folder — list its contents
-              const folderName = item.name
-              const subRes = await fetch(`${sbUrl}/storage/v1/object/list/${BUCKET}`, {
-                method: 'POST', headers,
-                body: JSON.stringify({ limit: 200, offset: 0, prefix: folderName + '/' })
-              })
-              if (!subRes.ok) continue
-              const subItems = await subRes.json()
-              const jsonFiles = (Array.isArray(subItems) ? subItems : []).filter(f => f.name && f.name.endsWith('.json') && f.id)
-              if (jsonFiles.length > 0) {
-                if (!merged.folders) merged.folders = {}
-                if (!merged.folders[folderName]) merged.folders[folderName] = { folders:{}, tests:[] }
-                for (const sf of jsonFiles) {
-                  const publicUrl = `${sbUrl}/storage/v1/object/public/${BUCKET}/${folderName}/${sf.name}`
-                  merged.folders[folderName].tests.push({
-                    title: sf.name.replace('.json','').replace(/_/g,' ').replace(/-/g,' '),
-                    path: `__storage__${folderName}/${sf.name}`,
-                    id: `storage__${folderName}__${sf.name}`,
-                    subject: folderName.toUpperCase().includes('JEE') ? 'JEE' : 'BITSAT',
-                    storageUrl: publicUrl
-                  })
-                }
-              }
-            } else if (item.name && item.name.endsWith('.json') && item.id) {
-              // Root-level JSON
-              const publicUrl = `${sbUrl}/storage/v1/object/public/${BUCKET}/${item.name}`
-              if (!merged.folders) merged.folders = {}
-              if (!merged.folders['Tests']) merged.folders['Tests'] = { folders:{}, tests:[] }
-              merged.folders['Tests'].tests.push({
-                title: item.name.replace('.json','').replace(/_/g,' ').replace(/-/g,' '),
-                path: `__storage__${item.name}`,
-                id: `storage__${item.name}`,
-                subject: 'BITSAT',
-                storageUrl: publicUrl
-              })
+          const storageRes = await fetch('/api/storage-tests')
+          if (storageRes.ok) {
+            const storageData = await storageRes.json()
+            if (storageData.error) throw new Error(storageData.error)
+            // Merge folders from storage into local tree
+            if (!merged.folders) merged.folders = {}
+            for (const [folderName, folderData] of Object.entries(storageData.folders || {})) {
+              if (!merged.folders[folderName]) merged.folders[folderName] = { folders:{}, tests:[] }
+              merged.folders[folderName].tests.push(...(folderData.tests || []))
+            }
+            // Merge root-level tests
+            if (storageData.tests?.length) {
+              merged.tests = [...(merged.tests || []), ...storageData.tests]
             }
           }
         } catch(e) { console.warn('Supabase Storage:', e.message); setStorageErr(e.message) }
