@@ -523,7 +523,7 @@ export default function Karle() {
           {(tr.tests||[]).filter(filt).map((t,i)=>(
             <TestCard key={t.path||t.id} t={t} ci={i} globalLoading={cbtLoading}
               onCBT={()=>startFromTree(t.path)}
-              attempt={attempts.find(a=>a.testId===t.id||a.testId===(t.path))}
+              attempt={attempts.find(a=>a.testId===t.id||a.testId===t.path||('__storage__'+a.testId)===t.path||a.testPath===t.path)}
               onAnalyse={async att=>{
                 try {
                   const tp = att.testPath || att.testId
@@ -598,7 +598,7 @@ export default function Karle() {
 
   // ── Test row component (list style like screenshot) ───────────────────────
   const TestRow = ({ t, ci }) => {
-    const att = attempts.find(a=>a.testId===t.id||a.testId===t.path)
+    const att = attempts.find(a=>a.testId===t.id||a.testId===t.path||('__storage__'+a.testId)===t.path||a.testPath===t.path)
     return (
       <div className={`trow-card${cbtLoading?' trow-dim':''}`}>
         <div className="trow-left">
