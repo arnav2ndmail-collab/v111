@@ -586,8 +586,8 @@ export default function Analyser() {
 
                   {/* Content */}
                   {curQ2.images?.length>0 ? (
-                    // IMAGE MODE: full image with answer badge overlaid in top-right corner
-                    <div className="rq-body" style={{position:'relative',padding:0,overflow:'hidden'}}>
+                    // IMAGE MODE: full image with answer bar at bottom
+                    <div className="rq-body" style={{position:'relative',padding:0}}>
                       <div className="rq-imgs" style={{padding:'20px 24px'}}>
                         {curQ2.images.map((img,i)=>(
                           <img key={i} src={`data:image/png;base64,${img}`} alt="" style={{maxWidth:'100%',height:'auto',display:'block',borderRadius:4}}/>
