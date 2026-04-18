@@ -1286,14 +1286,14 @@ body{background:#0a0e1a;color:#f1f5f9;font-family:'Inter',sans-serif;min-height:
 .marks-info{color:#10b981;font-weight:700;font-size:.72rem;background:#f0fdf4;border:1px solid #bbf7d0;padding:2px 10px;border-radius:20px}
 
 /* White question content card — image + text live here, natural size, NO scroll */
-.q-images{background:white;border:1px solid #e2e8f0;border-radius:12px;margin:0 16px 0;padding:20px 24px;display:flex;flex-direction:column;align-items:flex-start;gap:10px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.q-images{background:white;border:1px solid #e2e8f0;border-radius:12px;margin:0 16px;padding:20px 24px;display:flex;flex-direction:column;align-items:flex-start;gap:10px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
 .q-images img{max-width:100%;height:auto;display:block;border-radius:4px}
 
 /* Text question card */
 .qtext{background:white;border:1px solid #e2e8f0;border-radius:12px;margin:0 16px;padding:20px 24px;font-size:1rem;line-height:2.1;color:#1e293b;box-shadow:0 1px 4px rgba(0,0,0,.05)}
 
 /* Options — dark cards BELOW the white content card */
-.opts{display:flex;flex-direction:column;gap:7px;padding:12px 16px 8px}
+.opts{display:flex;flex-direction:column;gap:7px;padding:16px 16px 8px}
 .opt{display:flex;align-items:center;gap:12px;background:#1e293b;border:1.5px solid #334155;border-radius:10px;padding:13px 16px;cursor:pointer;transition:all .18s}
 .opt:hover:not(.cor):not(.wrg){border-color:#6366f1;background:#1e2d4d}
 .opt.sel{border-color:#6366f1;background:#1e2d4d}
