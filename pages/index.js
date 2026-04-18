@@ -126,47 +126,60 @@ export default function TestZyro() {
       if (isSupabaseReady()) {
         try {
           const sb = getSupabase()
-          // List top-level items in 'tests' bucket
-          const { data: topItems } = await sb.storage.from('tests').list('', { limit: 100 })
-          if (topItems && topItems.length > 0) {
-            for (const item of topItems) {
-              if (!item.id) {
-                // It's a folder - list its contents
-                const folderName = item.name
-                const { data: subFiles } = await sb.storage.from('tests').list(folderName, { limit: 200 })
-                if (subFiles) {
-                  const jsonFiles = subFiles.filter(f => f.name && f.name.endsWith('.json') && f.id)
-                  if (jsonFiles.length > 0) {
-                    if (!merged.folders) merged.folders = {}
-                    if (!merged.folders[folderName]) merged.folders[folderName] = { folders:{}, tests:[] }
-                    for (const sf of jsonFiles) {
-                      const { data: urlData } = sb.storage.from('tests').getPublicUrl(`${folderName}/${sf.name}`)
-                      merged.folders[folderName].tests.push({
-                        title: sf.name.replace('.json','').replace(/_/g,' ').replace(/-/g,' '),
-                        path: `__storage__${folderName}/${sf.name}`,
-                        id: `${folderName}/${sf.name}`,
-                        subject: folderName.toUpperCase().includes('JEE') ? 'JEE' : 'BITSAT',
-                        storageUrl: urlData.publicUrl
-                      })
-                    }
-                  }
-                }
-              } else if (item.name && item.name.endsWith('.json')) {
-                // JSON file at root of bucket
-                const { data: urlData } = sb.storage.from('tests').getPublicUrl(item.name)
+          const BUCKET = 'tests'
+          // Use REST API directly — more reliable than JS SDK for listing
+          const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+          const sbKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+          const headers = { 'apikey': sbKey, 'Authorization': `Bearer ${sbKey}`, 'Content-Type': 'application/json' }
+          
+          // List top-level items
+          const topRes = await fetch(`${sbUrl}/storage/v1/object/list/${BUCKET}`, {
+            method: 'POST', headers,
+            body: JSON.stringify({ limit: 200, offset: 0, prefix: '', delimiter: '/' })
+          })
+          if (!topRes.ok) throw new Error('Storage list failed')
+          const topItems = await topRes.json()
+          
+          for (const item of (Array.isArray(topItems) ? topItems : [])) {
+            if (item.name && !item.id) {
+              // It's a folder — list its contents
+              const folderName = item.name
+              const subRes = await fetch(`${sbUrl}/storage/v1/object/list/${BUCKET}`, {
+                method: 'POST', headers,
+                body: JSON.stringify({ limit: 200, offset: 0, prefix: folderName + '/' })
+              })
+              if (!subRes.ok) continue
+              const subItems = await subRes.json()
+              const jsonFiles = (Array.isArray(subItems) ? subItems : []).filter(f => f.name && f.name.endsWith('.json') && f.id)
+              if (jsonFiles.length > 0) {
                 if (!merged.folders) merged.folders = {}
-                if (!merged.folders['Storage Tests']) merged.folders['Storage Tests'] = { folders:{}, tests:[] }
-                merged.folders['Storage Tests'].tests.push({
-                  title: item.name.replace('.json','').replace(/_/g,' ').replace(/-/g,' '),
-                  path: `__storage__${item.name}`,
-                  id: item.name,
-                  subject: 'BITSAT',
-                  storageUrl: urlData.publicUrl
-                })
+                if (!merged.folders[folderName]) merged.folders[folderName] = { folders:{}, tests:[] }
+                for (const sf of jsonFiles) {
+                  const publicUrl = `${sbUrl}/storage/v1/object/public/${BUCKET}/${folderName}/${sf.name}`
+                  merged.folders[folderName].tests.push({
+                    title: sf.name.replace('.json','').replace(/_/g,' ').replace(/-/g,' '),
+                    path: `__storage__${folderName}/${sf.name}`,
+                    id: `storage__${folderName}__${sf.name}`,
+                    subject: folderName.toUpperCase().includes('JEE') ? 'JEE' : 'BITSAT',
+                    storageUrl: publicUrl
+                  })
+                }
               }
+            } else if (item.name && item.name.endsWith('.json') && item.id) {
+              // Root-level JSON
+              const publicUrl = `${sbUrl}/storage/v1/object/public/${BUCKET}/${item.name}`
+              if (!merged.folders) merged.folders = {}
+              if (!merged.folders['Tests']) merged.folders['Tests'] = { folders:{}, tests:[] }
+              merged.folders['Tests'].tests.push({
+                title: item.name.replace('.json','').replace(/_/g,' ').replace(/-/g,' '),
+                path: `__storage__${item.name}`,
+                id: `storage__${item.name}`,
+                subject: 'BITSAT',
+                storageUrl: publicUrl
+              })
             }
           }
-        } catch(e) { console.warn('Supabase Storage error:', e.message) }
+        } catch(e) { console.warn('Supabase Storage:', e.message) }
       }
       setTree(merged)
       const keys = Object.keys(merged.folders||{})
@@ -1235,8 +1248,8 @@ body{background:#0a0e1a;color:#f1f5f9;font-family:'Inter',sans-serif;min-height:
 .up-title{font-weight:700;font-size:1rem;color:white;margin-bottom:4px}
 .up-sub{font-size:.78rem;color:#64748b;margin-bottom:16px}
 
-/* ── CBT — FULLSCREEN WHITE INTERFACE ───────────── */
-.cbt-app{position:fixed;inset:0;display:flex;flex-direction:column;background:#f1f5f9;z-index:500;font-family:'Inter',sans-serif}
+/* ── CBT — FULLSCREEN INTERFACE ─────────────────── */
+.cbt-app{position:fixed;inset:0;display:flex;flex-direction:column;background:#f8fafc;z-index:500;font-family:'Inter',sans-serif}
 
 /* Top bar — dark */
 .cbt-top{background:#1a1f2e;padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0;border-bottom:1px solid #2d3748}
@@ -1252,78 +1265,79 @@ body{background:#0a0e1a;color:#f1f5f9;font-family:'Inter',sans-serif;min-height:
 .cbt-exit-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.75);padding:7px 12px;border-radius:7px;font-family:'Inter',sans-serif;font-size:.78rem;cursor:pointer;display:flex;align-items:center;gap:4px;transition:all .15s}
 .cbt-exit-btn:hover{border-color:rgba(239,68,68,.5);color:#f87171}
 
-/* Subject tabs — white */
+/* Subject tabs */
 .subj-tabs{background:white;border-bottom:1px solid #e2e8f0;display:flex;overflow-x:auto;flex-shrink:0;scrollbar-width:none}
 .subj-tabs::-webkit-scrollbar{display:none}
-.subj-tab{padding:0 18px;height:44px;font-family:'Inter',sans-serif;font-weight:600;font-size:.78rem;cursor:pointer;border:none;background:transparent;color:#64748b;display:flex;align-items:center;gap:6px;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s;flex-shrink:0}
+.subj-tab{padding:0 16px;height:44px;font-family:'Inter',sans-serif;font-weight:600;font-size:.78rem;cursor:pointer;border:none;background:transparent;color:#64748b;display:flex;align-items:center;gap:6px;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s;flex-shrink:0}
 .subj-tab:hover{color:#1e293b;background:#f8fafc}
 .subj-tab.active{color:#1e293b;border-bottom-color:#6366f1;background:#f5f3ff}
-.subj-tab-label{font-family:'JetBrains Mono',monospace;font-size:.6rem;font-weight:800;padding:2px 5px;border-radius:4px;background:#e2e8f0;color:#475569}
+.subj-tab-label{font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:800;padding:2px 6px;border-radius:4px;background:#e2e8f0;color:#475569}
 .subj-tab.active .subj-tab-label{background:#ede9fe;color:#6366f1}
 .subj-tab-name{font-size:.78rem}
-.subj-tab-count{font-family:'JetBrains Mono',monospace;font-size:.62rem;color:#94a3b8;background:#f1f5f9;padding:1px 6px;border-radius:10px}
-.subj-tab.active .subj-tab-count{background:#ede9fe;color:#6366f1}
-.bonus-tab{background:#fffbeb;border-bottom-color:#f59e0b !important}
-.bonus-tab.active{background:#fef3c7}
+.subj-tab-count{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:#94a3b8;background:#f1f5f9;padding:1px 7px;border-radius:10px;border:1px solid #e2e8f0}
+.subj-tab.active .subj-tab-count{background:#ede9fe;color:#6366f1;border-color:#c4b5fd}
+.bonus-tab{background:#fffbeb !important}
 
-/* Body */
+/* Body layout */
 .cbt-body{display:flex;flex:1;overflow:hidden;min-height:0}
 
-/* Question panel — scrollable white */
-.qpanel{flex:1;overflow-y:auto;display:flex;flex-direction:column;background:#f1f5f9;min-width:0}
+/* Question panel — THE WHOLE THING SCROLLS */
+.qpanel{flex:1;overflow-y:auto;background:#f8fafc;min-width:0;padding-bottom:20px}
 
 /* Section banner */
-.section-banner{padding:7px 20px;font-size:.78rem;font-weight:600;border-bottom:1.5px solid;display:flex;align-items:center;gap:10px;flex-shrink:0}
-.q-header-row{display:flex;align-items:center;justify-content:space-between;padding:10px 20px 6px;font-size:.76rem;flex-shrink:0}
+.section-banner{padding:7px 20px;font-size:.78rem;font-weight:600;border-bottom:1.5px solid;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:2}
+.q-header-row{display:flex;align-items:center;justify-content:space-between;padding:10px 20px 8px;font-size:.76rem}
 .qnum-label{color:#475569;font-weight:600}
 .marks-info{color:#10b981;font-weight:700;font-size:.72rem;background:#f0fdf4;border:1px solid #bbf7d0;padding:2px 10px;border-radius:20px}
 
-/* Image area — white card, constrained, SCROLLABLE */
-.q-images{background:white;border:1px solid #e2e8f0;border-radius:12px;margin:0 16px 10px;padding:14px;overflow-y:auto;max-height:340px;display:flex;flex-direction:column;align-items:center;gap:6px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
-.q-images img{max-width:100%;max-height:280px;object-fit:contain;display:block}
+/* White question content card — image + text live here, natural size, NO scroll */
+.q-images{background:white;border:1px solid #e2e8f0;border-radius:12px;margin:0 16px 0;padding:20px 24px;display:flex;flex-direction:column;align-items:flex-start;gap:10px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.q-images img{max-width:100%;height:auto;display:block;border-radius:4px}
 
-/* Text question */
-.qtext{background:white;border:1px solid #e2e8f0;border-radius:12px;margin:0 16px 10px;padding:16px 20px;font-size:.95rem;line-height:2;color:#1e293b;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+/* Text question card */
+.qtext{background:white;border:1px solid #e2e8f0;border-radius:12px;margin:0 16px;padding:20px 24px;font-size:1rem;line-height:2.1;color:#1e293b;box-shadow:0 1px 4px rgba(0,0,0,.05)}
 
-/* Options — always below content */
-.opts{display:flex;flex-direction:column;gap:8px;padding:0 16px 14px;flex-shrink:0}
-.opt{display:flex;align-items:center;gap:12px;background:white;border:1.5px solid #e2e8f0;border-radius:10px;padding:12px 16px;cursor:pointer;transition:all .18s;box-shadow:0 1px 3px rgba(0,0,0,.04)}
-.opt:hover:not(.cor):not(.wrg){border-color:#6366f1;background:#f5f3ff}
-.opt.sel{border-color:#6366f1;background:#eef2ff}
-.opt.cor{border-color:#10b981 !important;background:#f0fdf4 !important}
-.opt.wrg{border-color:#ef4444 !important;background:#fef2f2 !important}
-.olbl{width:30px;height:30px;border-radius:8px;background:#f1f5f9;border:1.5px solid #e2e8f0;color:#475569;font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+/* Options — dark cards BELOW the white content card */
+.opts{display:flex;flex-direction:column;gap:7px;padding:12px 16px 8px}
+.opt{display:flex;align-items:center;gap:12px;background:#1e293b;border:1.5px solid #334155;border-radius:10px;padding:13px 16px;cursor:pointer;transition:all .18s}
+.opt:hover:not(.cor):not(.wrg){border-color:#6366f1;background:#1e2d4d}
+.opt.sel{border-color:#6366f1;background:#1e2d4d}
+.opt.cor{border-color:#10b981 !important;background:#0d2b1e !important}
+.opt.wrg{border-color:#ef4444 !important;background:#2b1515 !important}
+.olbl{width:32px;height:32px;border-radius:7px;background:#0f172a;border:1.5px solid #334155;color:#94a3b8;font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
 .opt.sel .olbl{background:#6366f1;border-color:#6366f1;color:white}
 .opt.cor .olbl{background:#10b981;border-color:#10b981;color:white}
 .opt.wrg .olbl{background:#ef4444;border-color:#ef4444;color:white}
-.otext{font-size:.9rem;color:#1e293b;line-height:1.6;flex:1}
+.otext{font-size:.9rem;color:#e2e8f0;line-height:1.6;flex:1}
 
-/* Integer */
-.int-section{padding:0 16px 14px}
+/* Integer input */
+.int-section{padding:12px 16px 8px}
 .int-label{font-size:.76rem;color:#64748b;margin-bottom:8px;font-weight:500}
-.int-inp{background:white;border:1.5px solid #e2e8f0;border-radius:10px;padding:12px 16px;color:#1e293b;font-family:'JetBrains Mono',monospace;font-size:1.1rem;width:100%;max-width:280px;outline:none;transition:border-color .15s;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.int-inp{background:white;border:1.5px solid #e2e8f0;border-radius:10px;padding:12px 16px;color:#1e293b;font-family:'JetBrains Mono',monospace;font-size:1.1rem;width:100%;max-width:280px;outline:none;transition:border-color .15s}
 .int-inp:focus{border-color:#6366f1}
 
-/* Answer reveal banner */
-.ans-banner{margin:0 16px 10px;background:#f0fdf4;border:1px solid #86efac;color:#16a34a;padding:10px 16px;border-radius:9px;font-size:.84rem;font-weight:600}
+/* Answer banner */
+.ans-banner{margin:8px 16px;background:#f0fdf4;border:1px solid #86efac;color:#16a34a;padding:10px 16px;border-radius:9px;font-size:.84rem;font-weight:600}
 
-/* Action buttons */
-.action-row{display:flex;align-items:center;gap:8px;padding:8px 16px;flex-wrap:wrap;flex-shrink:0}
-.btn-save-next{background:#6366f1;color:white;border:none;padding:10px 22px;border-radius:8px;font-family:'Inter',sans-serif;font-weight:700;font-size:.82rem;cursor:pointer;transition:background .15s}
+/* Action buttons row */
+.action-row{display:flex;align-items:center;gap:8px;padding:8px 16px;flex-wrap:wrap}
+.btn-save-next{background:#6366f1;color:white;border:none;padding:10px 24px;border-radius:8px;font-family:'Inter',sans-serif;font-weight:700;font-size:.82rem;cursor:pointer;transition:background .15s}
 .btn-save-next:hover{background:#4f46e5}
 .btn-skip{background:white;border:1.5px solid #f59e0b;color:#b45309;padding:10px 16px;border-radius:8px;font-family:'Inter',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s}
 .btn-skip:hover{background:#fffbeb}
 .btn-clear{background:white;border:1.5px solid #e2e8f0;color:#64748b;padding:10px 14px;border-radius:8px;font-family:'Inter',sans-serif;font-size:.78rem;cursor:pointer;transition:all .15s}
 .btn-clear:hover{border-color:#ef4444;color:#ef4444}
-.nav-row{display:flex;align-items:center;justify-content:space-between;padding:8px 16px 14px;flex-shrink:0;border-top:1px solid #e2e8f0;background:white;margin-top:auto}
-.btn-prev,.btn-next{background:white;border:1.5px solid #e2e8f0;color:#475569;padding:8px 20px;border-radius:8px;font-family:'Inter',sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .15s}
+
+/* Bottom nav row - sticky at bottom */
+.nav-row{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-top:1px solid #e2e8f0;background:white;position:sticky;bottom:0;z-index:2;margin-top:12px}
+.btn-prev,.btn-next{background:white;border:1.5px solid #e2e8f0;color:#475569;padding:9px 22px;border-radius:8px;font-family:'Inter',sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .15s}
 .btn-prev:hover,.btn-next:hover{border-color:#6366f1;color:#6366f1}
 
 /* Right sidebar — dark navigator */
 .sb{width:220px;flex-shrink:0;background:#1a1f2e;border-left:1px solid #2d3748;display:flex;flex-direction:column;overflow:hidden}
 .sb-title{padding:10px 12px;border-bottom:1px solid #2d3748;font-size:.65rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1.5px}
-.sb-legend{padding:8px 10px;border-bottom:1px solid #2d3748;display:flex;flex-direction:column;gap:3px}
-.leg-item{display:flex;align-items:center;gap:6px;font-size:.6rem;color:#64748b}
+.sb-legend{padding:8px 10px;border-bottom:1px solid #2d3748;display:flex;flex-direction:column;gap:4px}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:.62rem;color:#64748b}
 .leg-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
 .leg-dot.answered{background:#10b981}
 .leg-dot.skipped{background:#f59e0b}
@@ -1333,13 +1347,13 @@ body{background:#0a0e1a;color:#f1f5f9;font-family:'Inter',sans-serif;min-height:
 .sb-stat{font-size:.6rem;color:#64748b;background:#0f1623;padding:3px 8px;border-radius:6px;display:flex;align-items:center;gap:3px}
 .sb-stat b{color:#94a3b8}
 .qgrid{overflow-y:auto;flex:1;display:grid;grid-template-columns:repeat(5,1fr);gap:3px;padding:8px;align-content:start}
-.qdot{height:30px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;cursor:pointer;color:white;transition:all .12s;border:none;background:#2d3748;color:#94a3b8}
+.qdot{height:30px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;cursor:pointer;transition:all .12s;border:none;background:#1e293b;color:#475569}
 .qdot.answered{background:#10b981;color:white}
 .qdot.skipped{background:#f59e0b;color:white}
 .qdot.marked-only{background:#8b5cf6;color:white}
 .qdot.answered-marked{background:#6366f1;color:white}
 .qdot.unanswered{background:#1e293b;color:#475569;border:1px solid #2d3748}
-.qdot.current{outline:2px solid #f1f5f9;outline-offset:1px;transform:scale(1.05)}
+.qdot.current{outline:2px solid white;outline-offset:1px;transform:scale(1.08)}
 .dot-arrow{position:absolute;right:-2px;top:-2px;font-size:6px;color:white}
 .sb-subject-groups{padding:6px 8px;border-bottom:1px solid #2d3748}
 .sb-sg-row{display:flex;align-items:center;justify-content:space-between;font-size:.62rem;padding:2px 4px;border-radius:4px;cursor:pointer;transition:background .12s;color:#64748b}
