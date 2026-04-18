@@ -661,7 +661,7 @@ export default function Karle() {
           </div>
         </div>
         <div className="trow-actions">
-          {att && <>
+          {att ? <>
             <button className="trow-btn outline" onClick={async()=>{
               if(cbtLoading)return
               try{
@@ -671,12 +671,13 @@ export default function Karle() {
                 window.location.href='/analyser?src=auto&tp='+encodeURIComponent(tp||'')
               }catch(e){alert('Could not load: '+e.message)}
             }}>View Analysis</button>
-            <button className="trow-btn outline" onClick={()=>{deleteAttempt(att.id);startFromTree(t.path)}}>Reattempt</button>
+            <button className="trow-btn primary" onClick={()=>{deleteAttempt(att.id);startFromTree(t.path)}}>Reattempt</button>
             <button className="trow-btn danger" title="Delete attempt" onClick={()=>{if(confirm('Delete this attempt?'))deleteAttempt(att.id)}}>🗑</button>
-          </>}
-          <button className="trow-btn primary" onClick={()=>!cbtLoading&&startFromTree(t.path)} disabled={cbtLoading}>
-            {cbtLoading?'Loading…':'Start Test'}
-          </button>
+          </> : (
+            <button className="trow-btn primary" onClick={()=>!cbtLoading&&startFromTree(t.path)} disabled={cbtLoading}>
+              {cbtLoading?'Loading…':'Start Test'}
+            </button>
+          )}
         </div>
       </div>
     )
@@ -685,18 +686,12 @@ export default function Karle() {
   // ── Main content area ─────────────────────────────────────────────────────
   const renderMainContent = () => {
     if (!activeFolder) {
-      // Show all tests flat or intro
-      const allTests = []
-      const collect = (tr) => { (tr.tests||[]).forEach(t=>allTests.push(t)); Object.values(tr.folders||{}).forEach(collect) }
-      collect(tree)
-      const filtered = allTests.filter(filt)
-      if (!filtered.length && !treeLoad) return (
+      return (
         <div className="lib-empty">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#c5cae9" strokeWidth="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
           <div>Select a category from the left panel</div>
         </div>
       )
-      return <div className="trow-list">{filtered.map((t,i)=><TestRow key={t.path||t.id} t={t} ci={i}/>)}</div>
     }
     if (activeFolder.startsWith('saved:')) {
       const tid = activeFolder.replace('saved:','')
