@@ -102,15 +102,15 @@ export default function Karle() {
   useEffect(() => {
     setSavedTests(JSON.parse(localStorage.getItem(SAVED_KEY)||'[]'))
     setAttempts(JSON.parse(localStorage.getItem(ATTEMPTS_KEY)||'[]'))
-    // Check Supabase session + load cloud attempts
+    // Check Supabase session + load cloud attempts + bookmarks
     if (isSupabaseReady()) {
       getSupabase().auth.getSession().then(async ({ data }) => {
         if (data.session) {
           setSbUser(data.session.user)
+          const token = data.session.access_token
+          // Load cloud attempts
           try {
-            const r = await fetch('/api/cloud-attempts', {
-              headers: { Authorization: `Bearer ${data.session.access_token}` }
-            })
+            const r = await fetch('/api/cloud-attempts', { headers: { Authorization: `Bearer ${token}` } })
             if (r.ok) {
               const cloudAttempts = await r.json()
               if (Array.isArray(cloudAttempts) && cloudAttempts.length > 0) {
@@ -123,6 +123,17 @@ export default function Karle() {
               }
             }
           } catch(e) { console.warn('Cloud attempts load failed:', e.message) }
+          // Load cloud bookmarks
+          try {
+            const rb = await fetch('/api/cloud-bookmarks', { headers: { Authorization: `Bearer ${token}` } })
+            if (rb.ok) {
+              const cloudBookmarks = await rb.json()
+              if (Array.isArray(cloudBookmarks) && cloudBookmarks.length > 0) {
+                setSavedTests(cloudBookmarks)
+                localStorage.setItem(SAVED_KEY, JSON.stringify(cloudBookmarks))
+              }
+            }
+          } catch(e) { console.warn('Cloud bookmarks load failed:', e.message) }
         }
       })
     }
@@ -170,12 +181,12 @@ export default function Karle() {
   }
 
   const startFromTree = async (testPath) => {
+    if (!sbUser) { window.location.href = '/login'; return }
     if (cbtLoading) return
     setCbtLoading(true)
     try {
       let d
       if (testPath && testPath.startsWith('__storage__')) {
-        // Load from Supabase Storage
         const storageKey = testPath.replace('__storage__','')
         const sb = getSupabase()
         const { data: { publicUrl } } = sb.storage.from('tests').getPublicUrl(storageKey)
@@ -193,6 +204,7 @@ export default function Karle() {
   }
 
   const startFromSaved = (t) => {
+    if (!sbUser) { window.location.href = '/login'; return }
     if (cbtLoading) return
     setCbtLoading(true)
     doLaunch(t.questions, { title:t.title, dur:t.dur||180, mCor:t.mCor||3, mNeg:t.mNeg||1, id:t.id, subject:t.subject })
@@ -469,15 +481,43 @@ export default function Karle() {
     }
     setSavedTests(current)
     try{localStorage.setItem(SAVED_KEY,JSON.stringify(current))}catch(e){}
+    // Sync to cloud
+    if (sbUser) {
+      try {
+        const sb = getSupabase()
+        const { data: { session } } = await sb.auth.getSession()
+        if (session?.access_token) {
+          fetch('/api/cloud-bookmarks', {
+            method: 'POST',
+            headers: { 'Content-Type':'application/json', Authorization:`Bearer ${session.access_token}` },
+            body: JSON.stringify({ bookmarks: current })
+          })
+        }
+      } catch(e) { console.warn('Bookmark cloud sync failed:', e.message) }
+    }
     setUploadMsg(`✅ Loaded ${ok} test(s)${fail?`, ${fail} failed`:''}`)
     setTimeout(()=>setUploadMsg(''),3000)
     setPage('library')
   }
 
-  const deleteAttempt = (id) => {
+  const deleteAttempt = async (id) => {
     const updated = attempts.filter(a=>a.id!==id)
     setAttempts(updated)
     localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(updated))
+    // Also delete from cloud
+    if (sbUser) {
+      try {
+        const sb = getSupabase()
+        const { data: { session } } = await sb.auth.getSession()
+        if (session?.access_token) {
+          await fetch('/api/cloud-attempts', {
+            method: 'DELETE',
+            headers: { 'Content-Type':'application/json', Authorization:`Bearer ${session.access_token}` },
+            body: JSON.stringify({ id })
+          })
+        }
+      } catch(e) { console.warn('Cloud delete failed:', e.message) }
+    }
   }
 
   const q=Qs[cur], ua=ans[cur], ak=(q?.ans||'').toUpperCase().trim()
@@ -626,12 +666,13 @@ export default function Karle() {
               if(cbtLoading)return
               try{
                 const tp=att.testPath||att.testId
-                const tiny={testTitle:att.testTitle,subject:att.subject,date:att.date,score:att.score,maxScore:att.maxScore,accuracy:att.accuracy,correct:att.correct,wrong:att.wrong,skipped:att.skipped,unattempted:att.unattempted,duration:att.duration,marksCorrect:att.marksCorrect,marksWrong:att.marksWrong,subjStats:att.subjStats,answers:att.questions?.map(q=>({yourAnswer:q.yourAnswer,result:q.result,correctAnswer:q.correctAnswer}))}
+                const tiny={testTitle:att.testTitle,subject:att.subject,date:att.date,score:att.score,maxScore:att.maxScore,accuracy:att.accuracy,correct:att.correct,wrong:att.wrong,skipped:att.skipped,unattempted:att.unattempted,duration:att.duration,marksCorrect:att.marksCorrect,marksWrong:att.marksWrong,subjStats:att.subjStats,answers:att.answers||att.questions?.map(q=>({yourAnswer:q.yourAnswer,result:q.result,correctAnswer:q.correctAnswer}))}
                 sessionStorage.setItem('tz_analyse',JSON.stringify(tiny))
                 window.location.href='/analyser?src=auto&tp='+encodeURIComponent(tp||'')
               }catch(e){alert('Could not load: '+e.message)}
             }}>View Analysis</button>
             <button className="trow-btn outline" onClick={()=>{deleteAttempt(att.id);startFromTree(t.path)}}>Reattempt</button>
+            <button className="trow-btn danger" title="Delete attempt" onClick={()=>{if(confirm('Delete this attempt?'))deleteAttempt(att.id)}}>🗑</button>
           </>}
           <button className="trow-btn primary" onClick={()=>!cbtLoading&&startFromTree(t.path)} disabled={cbtLoading}>
             {cbtLoading?'Loading…':'Start Test'}
@@ -1217,6 +1258,8 @@ body{background:#0a0e1a;color:#f1f5f9;font-family:'Inter',sans-serif;min-height:
 .trow-btn.primary{border:1.5px solid #6366f1;background:transparent;color:#6366f1;font-weight:700}
 .trow-btn.primary:hover{background:#6366f1;color:white}
 .trow-btn:disabled{opacity:.4;cursor:not-allowed}
+.trow-btn.danger{background:transparent;border:1.5px solid #ef5350;color:#ef5350;padding:7px 10px}
+.trow-btn.danger:hover{background:#ef5350;color:white}
 .resume-banner{background:#1a2234;border:1px solid #6366f1;border-radius:12px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .resume-banner-left{display:flex;align-items:center;gap:12px}
 .resume-icon-wrap{width:36px;height:36px;background:rgba(99,102,241,.2);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#6366f1;flex-shrink:0}

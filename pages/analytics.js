@@ -33,10 +33,26 @@ export default function Analytics() {
     sb.auth.getSession().then(async ({ data }) => {
       if (!data.session) { window.location.href = '/login'; return }
       setUser(data.session.user)
-      const { data: rows } = await sb.from('test_attempts')
-        .select('*').eq('user_id', data.session.user.id)
-        .order('taken_at', { ascending: false })
-      setAttempts(rows || [])
+      try {
+        const r = await fetch('/api/cloud-attempts', {
+          headers: { Authorization: `Bearer ${data.session.access_token}` }
+        })
+        if (r.ok) {
+          const rows = await r.json()
+          // Map cloud attempt shape → analytics shape
+          setAttempts((rows||[]).map(a => ({
+            ...a,
+            test_title: a.testTitle || a.test_title,
+            test_path: a.testPath || a.test_path,
+            test_id: a.testId || a.test_id,
+            max_score: a.maxScore || a.max_score,
+            marks_correct: a.marksCorrect || a.marks_correct || 3,
+            marks_wrong: a.marksWrong || a.marks_wrong || 1,
+            subj_stats: a.subjStats || a.subj_stats || {},
+            taken_at: a.date || a.taken_at,
+          })))
+        }
+      } catch(e) { console.warn('Analytics load failed:', e.message) }
       setLoading(false)
     })
   }, [])
@@ -373,11 +389,40 @@ export default function Analytics() {
                         const np = pct(na, tot), vp=pct(skp, tot)
                         const maxH = 120
                         if (!isOverall && !ss) return null
+                        const openAnalyser = () => {
+                          const tp = a.test_path || a.test_id
+                          const tiny = {
+                            testTitle:a.test_title, subject:a.subject, date:a.taken_at,
+                            score:a.score, maxScore:a.max_score, accuracy:a.accuracy,
+                            correct:a.correct, wrong:a.wrong, skipped:a.skipped, unattempted:a.unattempted,
+                            duration:a.duration, marksCorrect:a.marks_correct, marksWrong:a.marks_wrong,
+                            subjStats:a.subj_stats, answers:a.answers
+                          }
+                          try { sessionStorage.setItem('tz_analyse', JSON.stringify(tiny)) } catch(e) {}
+                          window.location.href = '/analyser?src=auto&tp=' + encodeURIComponent(tp||'')
+                        }
+                        const deleteRow = async () => {
+                          if (!confirm('Delete this attempt?')) return
+                          setAttempts(prev => prev.filter((_,j) => j!==i))
+                          // Delete from cloud
+                          try {
+                            const sb = (await import('../lib/supabase')).getSupabase()
+                            const { data: { session } } = await sb.auth.getSession()
+                            if (session?.access_token) {
+                              await fetch('/api/cloud-attempts', {
+                                method: 'DELETE',
+                                headers: { 'Content-Type':'application/json', Authorization:`Bearer ${session.access_token}` },
+                                body: JSON.stringify({ id: a.id })
+                              })
+                            }
+                          } catch(e) { console.warn('Delete failed:', e.message) }
+                        }
                         return (
-                          <div key={i} className="table-row">
+                          <div key={i} className="table-row" style={{cursor:'pointer'}} onClick={openAnalyser}>
                             <div>
                               <div className="test-name">{a.test_title}</div>
                               <div className="test-date">{fmtDate(a.taken_at)}</div>
+                              <button onClick={e=>{e.stopPropagation();deleteRow()}} style={{marginTop:4,background:'transparent',border:'1px solid #ef5350',color:'#ef5350',borderRadius:6,padding:'2px 8px',fontSize:'.65rem',cursor:'pointer'}}>🗑 Delete</button>
                             </div>
                             {[
                               [sp,  scr,  maxScr, '#f59e0b'],

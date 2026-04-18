@@ -1,0 +1,44 @@
+// pages/api/cloud-bookmarks.js
+// GET  → returns user's bookmarked test ids
+// POST → saves bookmarks array
+
+import { createClient } from '@supabase/supabase-js'
+
+function getAdmin() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY
+  if (!url || !key) return null
+  return createClient(url, key, { auth: { persistSession: false } })
+}
+
+export default async function handler(req, res) {
+  const sb = getAdmin()
+  if (!sb) return res.status(503).json({ error: 'Not configured' })
+
+  const token = (req.headers.authorization || '').replace('Bearer ', '')
+  if (!token) return res.status(401).json({ error: 'No token' })
+
+  const { data: { user }, error: authErr } = await sb.auth.getUser(token)
+  if (authErr || !user) return res.status(401).json({ error: 'Unauthorized' })
+
+  if (req.method === 'GET') {
+    const { data, error } = await sb
+      .from('user_bookmarks')
+      .select('bookmarks')
+      .eq('user_id', user.id)
+      .single()
+    if (error && error.code !== 'PGRST116') return res.status(500).json({ error: error.message })
+    return res.status(200).json(data?.bookmarks || [])
+  }
+
+  if (req.method === 'POST') {
+    const { bookmarks } = req.body
+    const { error } = await sb
+      .from('user_bookmarks')
+      .upsert({ user_id: user.id, bookmarks: bookmarks || [] }, { onConflict: 'user_id' })
+    if (error) return res.status(500).json({ error: error.message })
+    return res.status(200).json({ ok: true })
+  }
+
+  res.status(405).end()
+}
