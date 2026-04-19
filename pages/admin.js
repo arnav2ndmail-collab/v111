@@ -168,9 +168,18 @@ function ScheduleTab({ tok, schedules, setSchedules, flash, schedOpenFolder, set
   if(storageTree?.folders) Object.entries(storageTree.folders).forEach(([f,d])=>{ folderMap[f]=(d.tests||[]) })
   const folderNames = Object.keys(folderMap)
 
-  const saveSchedule = async(updated) => {
+  const saveSchedule = async (updated) => {
     setSchedules(updated)
-    await fetch('/api/admin/schedule',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},body:JSON.stringify({schedules:updated})})
+    const res = await fetch('/api/admin/schedule', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok },
+      body: JSON.stringify({ schedules: updated })
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(()=>({}))
+      console.error('Schedule save failed:', err)
+      flash('❌ Save failed: ' + (err.error || res.status))
+    }
   }
 
   const getMode = (tp) => {

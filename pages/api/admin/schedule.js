@@ -1,7 +1,3 @@
-// pages/api/admin/schedule.js
-// GET  → returns all scheduled tests (public, no auth needed)
-// POST → admin sets schedule for a test
-
 import { createClient } from '@supabase/supabase-js'
 import { verifyAdminToken } from '../../../lib/auth'
 
@@ -16,23 +12,17 @@ export default async function handler(req, res) {
   const sb = getAdmin()
   if (!sb) return res.status(503).json({ error: 'Not configured' })
 
-  // ── GET — public, returns all schedules ─────────────────────────────────
   if (req.method === 'GET') {
     const { data, error } = await sb
-      .from('site_config')
-      .select('value')
-      .eq('key', 'test_schedules')
-      .maybeSingle()
-    if (error && error.code !== 'PGRST116') return res.status(500).json({ error: error.message })
+      .from('site_config').select('value').eq('key', 'test_schedules').maybeSingle()
+    if (error) return res.status(500).json({ error: error.message })
     return res.status(200).json(data?.value || [])
   }
 
-  // ── POST — admin sets a schedule ─────────────────────────────────────────
   if (req.method === 'POST') {
     const token = (req.headers.authorization || '').replace('Bearer ', '')
     if (!verifyAdminToken(token)) return res.status(401).json({ error: 'Unauthorized' })
-
-    const { schedules } = req.body // array of { testPath, releaseAt } or null to remove
+    const { schedules } = req.body
     const { error } = await sb
       .from('site_config')
       .upsert({ key: 'test_schedules', value: schedules || [] }, { onConflict: 'key' })
