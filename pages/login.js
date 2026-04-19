@@ -20,6 +20,7 @@ export default function Login() {
   const submit = async () => {
     setErr(''); setLoading(true)
     if (!email.trim() || !pass.trim()) { setErr('Fill in all fields'); setLoading(false); return }
+    if (mode === 'signup' && !name.trim()) { setErr('Please enter your name — it appears on leaderboards'); setLoading(false); return }
     if (!isSupabaseReady()) { setErr('DB not configured — add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY to Vercel environment variables'); setLoading(false); return }
     const sb = getSupabase()
     try {

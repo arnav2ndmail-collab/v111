@@ -19,13 +19,21 @@ const ANALYSIS_ITEMS = [
 ]
 
 export default function Analytics() {
-  const [user, setUser]         = useState(null)
-  const [attempts, setAttempts] = useState([])
-  const [loading, setLoading]   = useState(true)
-  const [section, setSection]   = useState('Performance')
-  const [filterN, setFilterN]   = useState(0)
+  const [user, setUser]           = useState(null)
+  const [session, setSession]     = useState(null)
+  const [attempts, setAttempts]   = useState([])
+  const [loading, setLoading]     = useState(true)
+  const [section, setSection]     = useState('Performance')
+  const [filterN, setFilterN]     = useState(0)
   const [activeSubj, setActiveSubj] = useState('Overall')
-  const [showPct, setShowPct]   = useState(true)
+  const [showPct, setShowPct]     = useState(true)
+  // Folder filter
+  const [activeFolder, setActiveFolder] = useState('All')
+  const [folderOpen, setFolderOpen]     = useState(false)
+  // Leaderboard
+  const [lbTest, setLbTest]       = useState(null)
+  const [lbData, setLbData]       = useState(null)
+  const [lbLoading, setLbLoading] = useState(false)
 
   useEffect(() => {
     if (!isSupabaseReady()) { setLoading(false); return }
@@ -33,13 +41,13 @@ export default function Analytics() {
     sb.auth.getSession().then(async ({ data }) => {
       if (!data.session) { window.location.href = '/login'; return }
       setUser(data.session.user)
+      setSession(data.session)
       try {
         const r = await fetch('/api/cloud-attempts', {
           headers: { Authorization: `Bearer ${data.session.access_token}` }
         })
         if (r.ok) {
           const rows = await r.json()
-          // Map cloud attempt shape → analytics shape
           setAttempts((rows||[]).map(a => ({
             ...a,
             test_title: a.testTitle || a.test_title,
@@ -59,8 +67,42 @@ export default function Analytics() {
 
   const logout = async () => { await getSupabase().auth.signOut(); window.location.href = '/login' }
 
-  const filtered = filterN > 0 ? attempts.slice(0, filterN) : attempts
+  // Derive folders from attempts
+  const folders = ['All', ...Array.from(new Set(attempts.map(a => {
+    const p = a.test_path || a.test_id || ''
+    if (p.includes('__storage__')) {
+      const parts = p.replace('__storage__','').split('/')
+      return parts.length > 1 ? parts[0] : 'General'
+    }
+    const parts = p.split('/')
+    return parts.length > 1 ? parts[0] : 'General'
+  })))]
 
+  const folderFiltered = activeFolder === 'All' ? attempts
+    : attempts.filter(a => {
+        const p = a.test_path || a.test_id || ''
+        const folder = p.includes('__storage__')
+          ? (p.replace('__storage__','').split('/')[0] || 'General')
+          : (p.split('/')[0] || 'General')
+        return folder === activeFolder
+      })
+
+  const filtered = filterN > 0 ? folderFiltered.slice(0, filterN) : folderFiltered
+
+  const loadLeaderboard = async (attempt) => {
+    if (!session) return
+    setLbTest(attempt)
+    setLbLoading(true)
+    setLbData(null)
+    try {
+      const testId = attempt.test_id || attempt.testId
+      const r = await fetch(`/api/leaderboard?testId=${encodeURIComponent(testId)}`, {
+        headers: { Authorization: `Bearer ${session.access_token}` }
+      })
+      if (r.ok) setLbData(await r.json())
+    } catch(e) { console.warn(e) }
+    setLbLoading(false)
+  }
   const stats = (() => {
     if (!filtered.length) return null
     const n = filtered.length
@@ -236,9 +278,22 @@ export default function Analytics() {
           <span className="nav-label">Logout</span>
         </button>
 
-        <div className="series-btn">
-          <svg viewBox="0 0 24 24"><path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
-          <div className="series-btn-lbl">BITSAT<br/>2026</div>
+        <div className="series-btn" style={{position:'relative'}}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          <div className="series-btn-lbl" onClick={()=>setFolderOpen(o=>!o)} style={{cursor:'pointer',userSelect:'none'}}>
+            {activeFolder === 'All' ? 'All Tests' : activeFolder}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="12" height="12" style={{marginLeft:4}}><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          {folderOpen && (
+            <div style={{position:'absolute',bottom:'110%',left:0,right:0,background:'#1a2234',border:'1px solid #2d3748',borderRadius:10,overflow:'hidden',zIndex:100,boxShadow:'0 8px 24px rgba(0,0,0,.4)'}}>
+              {folders.map(f=>(
+                <div key={f} onClick={()=>{setActiveFolder(f);setFolderOpen(false)}} style={{padding:'9px 14px',cursor:'pointer',fontSize:'.78rem',fontWeight:600,color:activeFolder===f?'#6366f1':'#94a3b8',background:activeFolder===f?'rgba(99,102,241,.1)':'transparent',transition:'all .12s'}}
+                  onMouseEnter={e=>e.currentTarget.style.background='rgba(99,102,241,.08)'}
+                  onMouseLeave={e=>e.currentTarget.style.background=activeFolder===f?'rgba(99,102,241,.1)':'transparent'}
+                >{f === 'All' ? '📂 All Tests' : `📁 ${f}`}</div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -257,13 +312,12 @@ export default function Analytics() {
               <div className="pack-selector">
                 <div className="pack-label">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-                  All Karle Tests
+                  My Tests
                 </div>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
               </div>
 
-              <div className="pack-title">BITSAT Full Test Series</div>
-              <div className="pack-subtitle">(All Batches)</div>
+              <div className="pack-title">{activeFolder === 'All' ? 'All Tests' : activeFolder}</div>
+              <div className="pack-subtitle">{filtered.length} test{filtered.length!==1?'s':''} attempted</div>
 
               <div className="analysis-menu">
                 {ANALYSIS_ITEMS.map(({ label, icon }) => (
@@ -443,46 +497,112 @@ export default function Analytics() {
                   </div>
                 </>
               ) : section==='Timeline' ? (
-                <div className="performance-card animate-in">
-                  <h3 className="section-title">Score Timeline</h3>
-                  <div style={{overflowX:'auto',paddingBottom:8}}>
-                    <div style={{display:'flex',alignItems:'flex-end',gap:10,minHeight:180,padding:'12px 4px',borderBottom:'1px solid #2d3748',minWidth:filtered.length*62+'px'}}>
+                <>
+                  {/* Leaderboard modal */}
+                  {lbTest && (
+                    <div onClick={()=>setLbTest(null)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,.7)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+                      <div onClick={e=>e.stopPropagation()} style={{background:'#141927',border:'1px solid #2d3748',borderRadius:18,width:'100%',maxWidth:520,maxHeight:'85vh',display:'flex',flexDirection:'column',overflow:'hidden',boxShadow:'0 24px 80px rgba(0,0,0,.6)'}}>
+                        {/* Modal header */}
+                        <div style={{padding:'16px 20px',borderBottom:'1px solid #2d3748',display:'flex',alignItems:'center',gap:12,flexShrink:0}}>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontWeight:800,fontSize:'.92rem',color:'#e2e8f0'}}>🏆 Leaderboard</div>
+                            <div style={{fontSize:'.7rem',color:'#64748b',marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{lbTest.test_title}</div>
+                          </div>
+                          <button onClick={()=>setLbTest(null)} style={{background:'transparent',border:'1px solid #2d3748',color:'#64748b',width:30,height:30,borderRadius:7,cursor:'pointer',fontSize:'1rem',display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
+                        </div>
+                        {/* My rank banner */}
+                        {!lbLoading && lbData?.myRank && (
+                          <div style={{padding:'12px 20px',borderBottom:'1px solid #2d3748',background:'rgba(99,102,241,.08)',flexShrink:0,display:'flex',alignItems:'center',gap:12}}>
+                            <div style={{fontSize:'1.6rem',fontWeight:900,color:'#6366f1',minWidth:44,textAlign:'center'}}>#{lbData.myRank.rank}</div>
+                            <div style={{flex:1}}>
+                              <div style={{fontWeight:700,color:'#e2e8f0',fontSize:'.85rem'}}>You · {lbData.myRank.name}</div>
+                              <div style={{fontSize:'.68rem',color:'#94a3b8'}}>Score {lbData.myRank.score}/{lbData.myRank.maxScore} · {lbData.myRank.accuracy}% accuracy</div>
+                            </div>
+                            <div style={{fontSize:'.68rem',color:'#475569',flexShrink:0}}>{lbData.total} took this test</div>
+                          </div>
+                        )}
+                        {/* Scrollable list */}
+                        <div style={{overflowY:'auto',flex:1,padding:'12px 16px',display:'flex',flexDirection:'column',gap:6}}>
+                          {lbLoading ? (
+                            <div className="state"><div className="spin"/><p>Loading…</p></div>
+                          ) : !lbData?.leaderboard?.length ? (
+                            <div className="state"><p>No data yet</p></div>
+                          ) : lbData.leaderboard.map((row,i)=>(
+                            <div key={i} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',borderRadius:10,border:`1.5px solid ${row.isYou?'#6366f1':'#1e293b'}`,background:row.isYou?'rgba(99,102,241,.08)':'transparent'}}>
+                              <div style={{width:30,height:30,borderRadius:7,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:800,fontSize:'.78rem',flexShrink:0,background:i===0?'#f59e0b':i===1?'#94a3b8':i===2?'#cd7c3a':'#1e293b',color:i<3?'#0a0e1a':'#64748b'}}>
+                                {i===0?'🥇':i===1?'🥈':i===2?'🥉':row.rank}
+                              </div>
+                              <div style={{flex:1,minWidth:0}}>
+                                <div style={{fontWeight:600,fontSize:'.83rem',color:row.isYou?'#818cf8':'#e2e8f0',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                                  {row.name}{row.isYou?' (You)':''}
+                                </div>
+                                <div style={{fontSize:'.62rem',color:'#475569'}}>✓ {row.correct} · ✗ {row.wrong}</div>
+                              </div>
+                              <div style={{textAlign:'right',flexShrink:0}}>
+                                <div style={{fontWeight:800,fontSize:'.88rem',color:'#f59e0b'}}>{row.score}</div>
+                                <div style={{fontSize:'.6rem',color:'#64748b'}}>{row.accuracy}%</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Timeline bars */}
+                  <div className="performance-card animate-in">
+                    <h3 className="section-title">Score Timeline</h3>
+                    <div style={{overflowX:'auto',paddingBottom:8}}>
+                      <div style={{display:'flex',alignItems:'flex-end',gap:10,minHeight:180,padding:'12px 4px',borderBottom:'1px solid #2d3748',minWidth:filtered.length*62+'px'}}>
+                        {filtered.slice().reverse().map((a,i)=>{
+                          const sp=pct(a.score,a.max_score)
+                          const col=sp>=60?'#10b981':sp>=40?'#f59e0b':'#ef4444'
+                          return(
+                            <div key={i} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,minWidth:52,flex:'0 0 52px'}}>
+                              <div style={{fontSize:'.65rem',color:col,fontWeight:800}}>{sp}%</div>
+                              <div style={{width:36,background:col,borderRadius:'6px 6px 0 0',height:Math.max(6,sp*1.5)+'px',opacity:.9,transition:'height .4s'}}/>
+                              <div style={{fontSize:'.55rem',color:'#64748b',textAlign:'center',lineHeight:1.3,maxWidth:52,wordBreak:'break-word',marginTop:4}}>{a.test_title.length>12?a.test_title.slice(0,12)+'…':a.test_title}</div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                      <div style={{display:'flex',gap:14,marginTop:12,flexWrap:'wrap'}}>
+                        {[['#10b981','≥60% Good'],['#f59e0b','40–60% Average'],['#ef4444','<40% Needs Work']].map(([col,l])=>(
+                          <div key={l} style={{display:'flex',alignItems:'center',gap:5,fontSize:'.72rem',color:'#64748b'}}>
+                            <div style={{width:10,height:10,borderRadius:3,background:col}}/>{l}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Leaderboard tiles — below timeline */}
+                  <div className="performance-card animate-in" style={{marginTop:16}}>
+                    <h3 className="section-title">🏆 Leaderboard</h3>
+                    <p style={{fontSize:'.75rem',color:'#64748b',marginBottom:14}}>Click a test to see how you ranked among all users</p>
+                    <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(190px,1fr))',gap:10}}>
                       {filtered.slice().reverse().map((a,i)=>{
                         const sp=pct(a.score,a.max_score)
                         const col=sp>=60?'#10b981':sp>=40?'#f59e0b':'#ef4444'
                         return(
-                          <div key={i} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,minWidth:52,flex:'0 0 52px'}}>
-                            <div style={{fontSize:'.65rem',color:col,fontWeight:800}}>{sp}%</div>
-                            <div style={{width:36,background:col,borderRadius:'6px 6px 0 0',height:Math.max(6,sp*1.5)+'px',opacity:.9,transition:'height .4s'}}/>
-                            <div style={{fontSize:'.55rem',color:'#64748b',textAlign:'center',lineHeight:1.3,maxWidth:52,wordBreak:'break-word',marginTop:4}}>{a.test_title.length>12?a.test_title.slice(0,12)+'…':a.test_title}</div>
+                          <div key={i} style={{background:'#0d1220',border:'1px solid #1e293b',borderRadius:12,padding:14,display:'flex',flexDirection:'column',gap:8}}>
+                            <div style={{fontSize:'.75rem',fontWeight:700,color:'#94a3b8',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{a.test_title}</div>
+                            <div style={{fontSize:'.62rem',color:'#475569'}}>{fmtDate(a.taken_at)}</div>
+                            <div style={{display:'flex',gap:10,alignItems:'center'}}>
+                              <div style={{fontWeight:800,fontSize:'1.1rem',color:col}}>{sp}%</div>
+                              <div style={{fontSize:'.65rem',color:'#64748b'}}>{a.score}/{a.max_score} pts</div>
+                            </div>
+                            <button onClick={()=>loadLeaderboard(a)} style={{marginTop:'auto',width:'100%',background:'rgba(99,102,241,.1)',border:'1px solid rgba(99,102,241,.3)',color:'#818cf8',padding:'7px 0',borderRadius:8,fontSize:'.72rem',fontWeight:700,cursor:'pointer',fontFamily:'Inter,sans-serif',transition:'all .15s'}}
+                              onMouseEnter={e=>e.currentTarget.style.background='rgba(99,102,241,.25)'}
+                              onMouseLeave={e=>e.currentTarget.style.background='rgba(99,102,241,.1)'}
+                            >🏆 View Leaderboard</button>
                           </div>
                         )
                       })}
                     </div>
-                    <div style={{display:'flex',gap:14,marginTop:12,flexWrap:'wrap'}}>
-                      {[['#10b981','≥60% Good'],['#f59e0b','40–60% Average'],['#ef4444','<40% Needs Work']].map(([col,l])=>(
-                        <div key={l} style={{display:'flex',alignItems:'center',gap:5,fontSize:'.72rem',color:'#64748b'}}>
-                          <div style={{width:10,height:10,borderRadius:3,background:col}}/>
-                          {l}
-                        </div>
-                      ))}
-                    </div>
                   </div>
-                  <div style={{marginTop:20,display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))',gap:10}}>
-                    {filtered.slice().reverse().map((a,i)=>(
-                      <div key={i} style={{background:'#0d1220',border:'1px solid #1e293b',borderRadius:10,padding:12}}>
-                        <div style={{fontSize:'.72rem',fontWeight:600,color:'#94a3b8',marginBottom:3,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{a.test_title}</div>
-                        <div style={{fontSize:'.6rem',color:'#475569',marginBottom:8}}>{fmtDate(a.taken_at)}</div>
-                        <div style={{display:'flex',gap:12}}>
-                          <div><div style={{fontSize:'.55rem',color:'#64748b',marginBottom:1}}>Score</div><div style={{fontSize:'.96rem',fontWeight:800,color:'#f59e0b'}}>{a.score}/{a.max_score}</div></div>
-                          <div><div style={{fontSize:'.55rem',color:'#64748b',marginBottom:1}}>Correct</div><div style={{fontSize:'.96rem',fontWeight:800,color:'#10b981'}}>{a.correct}</div></div>
-                          <div><div style={{fontSize:'.55rem',color:'#64748b',marginBottom:1}}>Wrong</div><div style={{fontSize:'.96rem',fontWeight:800,color:'#ef4444'}}>{a.wrong}</div></div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
+                </>
+              ) : section==='Leaderboard' ? null : (
                 <div className="state">
                   <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#2d3748" strokeWidth="1.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                   <h2>{section}</h2>
