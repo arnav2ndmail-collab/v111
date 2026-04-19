@@ -150,6 +150,64 @@ async function processBitsatZip(file, testName, onProgress) {
   }
 }
 
+function ScheduleTab({ tok, schedules, setSchedules, flash, schedOpenFolder, setSchedOpenFolder }) {
+  const [storageTree, setStorageTree] = React.useState(null)
+  const [stLoading, setStLoading] = React.useState(true)
+  React.useEffect(()=>{
+    fetch('/api/storage-tests')
+      .then(r=>r.ok?r.json():{folders:{}})
+      .then(d=>{ setStorageTree(d); setStLoading(false) })
+      .catch(()=>setStLoading(false))
+  },[])
+  const folderMap = {}
+  if(storageTree?.folders) Object.entries(storageTree.folders).forEach(([f,d])=>{ folderMap[f]=(d.tests||[]) })
+  const folderNames = Object.keys(folderMap)
+  const saveSchedule = async(updated)=>{ setSchedules(updated); await fetch('/api/admin/schedule',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},body:JSON.stringify({schedules:updated})}) }
+  return (
+    <div className="section">
+      <div className="sec-head"><h1>🗓️ Test Scheduling</h1><p>Set when each test becomes available to attempt</p></div>
+      {stLoading && <div style={{color:'#888',padding:20}}>Loading from Supabase Storage…</div>}
+      {!stLoading && folderNames.length===0 && <div style={{color:'#888',padding:20}}>No tests found. Upload tests via BITSAT ZIP tab first.</div>}
+      {!stLoading && folderNames.length>0 && <>
+        <div style={{display:'flex',gap:10,flexWrap:'wrap',marginBottom:16}}>
+          {folderNames.map(f=>(
+            <button key={f} onClick={()=>setSchedOpenFolder(schedOpenFolder===f?null:f)}
+              style={{padding:'8px 16px',borderRadius:8,border:`1.5px solid ${schedOpenFolder===f?'#6366f1':'#e8eaf6'}`,background:schedOpenFolder===f?'#ede9fe':'white',color:schedOpenFolder===f?'#4c1d95':'#1a237e',fontFamily:'Inter,sans-serif',fontWeight:600,fontSize:'.8rem',cursor:'pointer'}}>
+              📁 {f} <span style={{fontWeight:400,color:'#888',fontSize:'.72rem'}}>({(folderMap[f]||[]).length})</span>
+            </button>
+          ))}
+        </div>
+        {schedOpenFolder && (folderMap[schedOpenFolder]||[]).map((t,i)=>{
+          const tp=t.path||t.id||''; const ex=schedules.find(s=>s.testPath===tp)
+          const isLocked=ex?.releaseAt&&new Date(ex.releaseAt)>Date.now(); const isPast=ex?.releaseAt&&!isLocked
+          return(<div key={i} className="test-row" style={{padding:'12px 16px',display:'flex',alignItems:'center',gap:12,flexWrap:'wrap',marginBottom:6}}>
+            <div style={{flex:1,minWidth:180}}>
+              <div style={{fontWeight:700,fontSize:'.88rem',color:'#1a237e'}}>{t.title||tp}</div>
+              <div style={{fontSize:'.65rem',color:'#aaa',marginTop:2}}>{tp}</div>
+            </div>
+            <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+              {isLocked&&<span style={{fontSize:'.7rem',background:'#fff3e0',color:'#e65100',border:'1px solid #ffcc80',padding:'3px 10px',borderRadius:20,fontWeight:600}}>🔒 {new Date(ex.releaseAt).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span>}
+              {isPast&&<span style={{fontSize:'.7rem',background:'#f1f8f3',color:'#2e7d32',border:'1px solid #c8e6c9',padding:'3px 10px',borderRadius:20,fontWeight:600}}>✅ Live</span>}
+              {!ex?.releaseAt&&<span style={{fontSize:'.7rem',background:'#f1f8f3',color:'#2e7d32',border:'1px solid #c8e6c9',padding:'3px 10px',borderRadius:20,fontWeight:600}}>✅ Always Available</span>}
+              <input type="datetime-local" defaultValue={ex?.releaseAt?new Date(ex.releaseAt).toISOString().slice(0,16):''}
+                onChange={async e=>{const val=e.target.value;const updated=schedules.filter(s=>s.testPath!==tp);if(val)updated.push({testPath:tp,testTitle:t.title||tp,releaseAt:new Date(val).toISOString()});await saveSchedule(updated);flash(val?'🔒 Scheduled!':'✅ Always available')}}
+                style={{border:'1px solid #e8eaf6',borderRadius:7,padding:'5px 10px',fontSize:'.76rem',fontFamily:'Inter,sans-serif',color:'#1a237e'}}/>
+              {ex?.releaseAt&&<button onClick={async()=>{await saveSchedule(schedules.filter(s=>s.testPath!==tp));flash('✅ Removed')}} style={{background:'transparent',border:'1px solid #ef5350',color:'#ef5350',padding:'5px 10px',borderRadius:7,fontSize:'.72rem',cursor:'pointer',fontFamily:'Inter,sans-serif'}}>Remove</button>}
+            </div>
+          </div>)
+        })}
+        {schedules.length>0&&<div style={{marginTop:24}}>
+          <div style={{fontWeight:700,color:'#1a237e',fontSize:'.85rem',marginBottom:8}}>Scheduled ({schedules.length})</div>
+          {schedules.map((s,i)=>{const past=new Date(s.releaseAt)<=Date.now();return<div key={i} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 14px',borderRadius:8,background:'#f8fafc',border:'1px solid #e8eaf6',marginBottom:6}}>
+            <span style={{fontSize:'.8rem',flex:1,fontWeight:600,color:'#1a237e'}}>{s.testTitle||s.testPath}</span>
+            <span style={{fontSize:'.7rem',color:past?'#2e7d32':'#e65100',fontWeight:600}}>{past?'✅':'🔒'} {new Date(s.releaseAt).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span>
+          </div>})}
+        </div>}
+      </>}
+    </div>
+  )
+}
+
 export default function AdminPage() {
   const [tok, setTok]       = useState('')
   const [loggedIn, setLoggedIn] = useState(false)
@@ -572,14 +630,13 @@ export default function AdminPage() {
           )}
 
           {/* ═══ SCHEDULE ═══ */}
-          {tab==='schedule' && (
+          {tab==='schedule' && <ScheduleTab tok={tok} schedules={schedules} setSchedules={setSchedules} flash={flash} schedOpenFolder={schedOpenFolder} setSchedOpenFolder={setSchedOpenFolder}/>}
+          {tab==='schedule_DISABLED_OLD' && (
             <div className="section">
               <div className="sec-head">
                 <h1>🗓️ Test Scheduling</h1>
-                <p>Browse folders and set when each test becomes available to attempt</p>
               </div>
-              {loading && <div style={{color:'#888',padding:20}}>Loading tests…</div>}
-              {!loading && tests.length===0 && <div style={{color:'#888',padding:20}}>No tests found in storage. Upload tests first via BITSAT ZIP tab.</div>}
+              {false && <div/>}
 
               {/* Folder browser */}
               <div style={{display:'flex',gap:12,flexWrap:'wrap',marginBottom:16}}>
