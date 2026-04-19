@@ -1,4 +1,3 @@
-import React from "react";
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Head from 'next/head'
 import Nav from '../components/Nav'
@@ -663,8 +662,12 @@ export default function Karle() {
   // ── Test row component (list style like screenshot) ───────────────────────
   const TestRow = ({ t, ci }) => {
     const att = attempts.find(a=>a.testId===t.id||a.testId===t.path||('__storage__'+a.testId)===t.path||a.testPath===t.path)
-    const sched = schedules.find(s=>s.testPath===t.path)
-    const isLocked = sched?.releaseAt && new Date(sched.releaseAt) > Date.now()
+    const sched = schedules.find(s=>
+      s.testPath===t.path || s.testPath===t.id ||
+      '__storage__'+s.testPath===t.path || s.testPath==='__storage__'+t.path
+    )
+    if(sched?.mode==='hidden') return null
+    const isLocked = sched?.mode==='schedule' && sched?.releaseAt && new Date(sched.releaseAt) > Date.now()
     const releaseLabel = isLocked ? new Date(sched.releaseAt).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : null
     return (
       <div className={`trow-card${cbtLoading?' trow-dim':''}`}>
