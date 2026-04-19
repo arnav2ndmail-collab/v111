@@ -26,8 +26,8 @@ export default async function handler(req, res) {
       .from('user_bookmarks')
       .select('bookmarks')
       .eq('user_id', user.id)
-      .single()
-    if (error && error.code !== 'PGRST116') return res.status(500).json({ error: error.message })
+      .maybeSingle()
+    if (error) return res.status(500).json({ error: error.message })
     return res.status(200).json(data?.bookmarks || [])
   }
 

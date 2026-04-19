@@ -27,7 +27,7 @@ export default async function handler(req, res) {
       .from('site_config')
       .select('value')
       .eq('key', 'exams')
-      .single()
+      .maybeSingle()
 
     return res.status(200).json({
       totalAttempts: count || 0,
