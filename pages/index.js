@@ -195,11 +195,13 @@ export default function Karle() {
     if (cbtLoading) return
     // Check schedule
     try {
+      const normPath = (p='') => p.replace('__storage__','').replace(/\.json$/,'').toLowerCase().trim()
       const r = await fetch('/api/admin/schedule')
       if (r.ok) {
-        const sched = await r.json()
-        const entry = sched.find(s => s.testPath === testPath)
-        if (entry?.releaseAt && new Date(entry.releaseAt) > Date.now()) {
+        const schedArr = await r.json()
+        const sched = schedArr.find(s=>s.testPath===testPath||normPath(s.testPath)===normPath(testPath))
+        const hasSchedule = sched?.mode==='schedule' || (sched && !sched.mode && sched.releaseAt)
+        if (hasSchedule && sched?.releaseAt && new Date(sched.releaseAt) > Date.now()) {
           const dt = new Date(entry.releaseAt).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})
           alert(`🔒 This test releases on ${dt}\nPlease come back then.`)
           return
@@ -662,12 +664,17 @@ export default function Karle() {
   // ── Test row component (list style like screenshot) ───────────────────────
   const TestRow = ({ t, ci }) => {
     const att = attempts.find(a=>a.testId===t.id||a.testId===t.path||('__storage__'+a.testId)===t.path||a.testPath===t.path)
+    const normPath = (p='') => p.replace('__storage__','').replace(/\.json$/,'').toLowerCase().trim()
     const sched = schedules.find(s=>
-      s.testPath===t.path || s.testPath===t.id ||
-      '__storage__'+s.testPath===t.path || s.testPath==='__storage__'+t.path
+      s.testPath===t.path ||
+      s.testPath===t.id ||
+      normPath(s.testPath)===normPath(t.path) ||
+      normPath(s.testPath)===normPath(t.id)
     )
     if(sched?.mode==='hidden') return null
-    const isLocked = sched?.mode==='schedule' && sched?.releaseAt && new Date(sched.releaseAt) > Date.now()
+    // Support both old format (just releaseAt) and new format (mode:'schedule')
+    const hasSchedule = sched?.mode==='schedule' || (sched && !sched.mode && sched.releaseAt)
+    const isLocked = hasSchedule && sched?.releaseAt && new Date(sched.releaseAt) > Date.now()
     const releaseLabel = isLocked ? new Date(sched.releaseAt).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : null
     return (
       <div className={`trow-card${cbtLoading?' trow-dim':''}`}>
