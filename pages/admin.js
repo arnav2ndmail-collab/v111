@@ -359,7 +359,7 @@ export default function AdminPage() {
               ['solutions','📄','Solutions'],
               ['json','📤','JSON Upload'],
             ].map(([t,ic,lb])=>(
-              <button key={t} className={`s-btn${tab===t?' on':''}`} onClick={()=>setTab(t)}>
+              <button key={t} className={`s-btn${tab===t?' on':''}`} onClick={()=>{setTab(t);if((t==='schedule'||t==='tests')&&tests.length===0)loadTests()}}>
                 <span className="s-ic">{ic}</span><span>{lb}</span>
               </button>
             ))}
@@ -578,6 +578,8 @@ export default function AdminPage() {
                 <h1>🗓️ Test Scheduling</h1>
                 <p>Browse folders and set when each test becomes available to attempt</p>
               </div>
+              {loading && <div style={{color:'#888',padding:20}}>Loading tests…</div>}
+              {!loading && tests.length===0 && <div style={{color:'#888',padding:20}}>No tests found in storage. Upload tests first via BITSAT ZIP tab.</div>}
 
               {/* Folder browser */}
               <div style={{display:'flex',gap:12,flexWrap:'wrap',marginBottom:16}}>
