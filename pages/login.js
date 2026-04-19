@@ -93,14 +93,14 @@ export default function Login() {
           </div>
           {mode==='signup' && (
             <div className="notice">
-              ℹ️ Make sure email confirmation is <strong>disabled</strong> in Supabase Dashboard → Authentication → Settings → Email confirmations: OFF
+              👤 Your name will appear on leaderboards and in your profile. Make it something others can recognize you by!
             </div>
           )}
           {err && <div className="err">{err}</div>}
           {mode==='signup' && (
             <div className="field">
-              <label>Your Name</label>
-              <input value={name} onChange={e=>setName(e.target.value)} placeholder="Full name (optional)"/>
+              <label>Your Name <span style={{color:'#ef4444',fontSize:'.8em'}}>*</span></label>
+              <input value={name} onChange={e=>setName(e.target.value)} placeholder="Full name (required)" required/>
             </div>
           )}
           <div className="field">

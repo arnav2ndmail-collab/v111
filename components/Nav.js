@@ -65,6 +65,10 @@ function LoginBtn() {
     try {
       const { getSupabase } = require('../lib/supabase')
       await getSupabase().auth.signOut()
+      // Clear local data so it doesn't bleed into the next login
+      localStorage.removeItem('tz_attempts_v1')
+      localStorage.removeItem('tz_saved_v3')
+      localStorage.removeItem('tz_resume_v2')
       setUser(null)
       window.location.reload()
     }catch(e){}

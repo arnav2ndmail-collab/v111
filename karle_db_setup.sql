@@ -71,6 +71,7 @@ CREATE TABLE site_config (
 
 -- Seed with empty values
 INSERT INTO site_config (key, value) VALUES ('exams', '[]');
+INSERT INTO site_config (key, value) VALUES ('test_schedules', '[]');
 
 -- Public read so homepage can fetch exam countdowns without auth
 ALTER TABLE site_config ENABLE ROW LEVEL SECURITY;

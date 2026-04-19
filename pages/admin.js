@@ -171,6 +171,10 @@ export default function AdminPage() {
   // Announcements
   const [whatsNew, setWhatsNew] = useState([])
   const [wnText, setWnText]  = useState('')
+  // Scheduling
+  const [schedules, setSchedules]   = useState([])  // [{testPath, testTitle, releaseAt}]
+  const [schedFolders, setSchedFolders] = useState({}) // {folderName: [tests]}
+  const [schedOpenFolder, setSchedOpenFolder] = useState(null)
 
   // BITSAT processor
   const [zipFile, setZipFile]     = useState(null)
@@ -212,6 +216,11 @@ export default function AdminPage() {
       setSiteStats({ totalAttempts: d.totalAttempts||0 })
       setExams(d.exams||[])
       setWhatsNew(d.whatsNew||[])
+    } catch(e) {}
+    // Load schedules
+    try {
+      const r = await fetch('/api/admin/schedule')
+      if (r.ok) setSchedules(await r.json())
     } catch(e) {}
   }
 
@@ -344,6 +353,7 @@ export default function AdminPage() {
             {[
               ['bitsat','📦','BITSAT ZIP'],
               ['tests','📋','All Tests'],
+              ['schedule','🗓️','Schedule'],
               ['exams','📅','Exam Dates'],
               ['users','👥','Users'],
               ['solutions','📄','Solutions'],
@@ -558,6 +568,113 @@ export default function AdminPage() {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* ═══ SCHEDULE ═══ */}
+          {tab==='schedule' && (
+            <div className="section">
+              <div className="sec-head">
+                <h1>🗓️ Test Scheduling</h1>
+                <p>Browse folders and set when each test becomes available to attempt</p>
+              </div>
+
+              {/* Folder browser */}
+              <div style={{display:'flex',gap:12,flexWrap:'wrap',marginBottom:16}}>
+                {Object.keys(
+                  tests.reduce((acc,t)=>{
+                    const folder = t.path?.split('/')?.[0] || 'General'
+                    acc[folder] = acc[folder]||[]
+                    acc[folder].push(t)
+                    return acc
+                  },{})
+                ).map(folder=>(
+                  <button key={folder} onClick={()=>setSchedOpenFolder(schedOpenFolder===folder?null:folder)}
+                    style={{padding:'8px 16px',borderRadius:8,border:`1.5px solid ${schedOpenFolder===folder?'#6366f1':'#e8eaf6'}`,
+                      background:schedOpenFolder===folder?'#ede9fe':'white',color:schedOpenFolder===folder?'#4c1d95':'#1a237e',
+                      fontFamily:'Inter,sans-serif',fontWeight:600,fontSize:'.8rem',cursor:'pointer',transition:'all .15s'}}>
+                    📁 {folder}
+                  </button>
+                ))}
+              </div>
+
+              {/* Tests in selected folder */}
+              {schedOpenFolder && (() => {
+                const folderTests = tests.filter(t=>(t.path?.split('/')?.[0]||'General')===schedOpenFolder)
+                return (
+                  <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                    <div style={{fontWeight:700,color:'#1a237e',fontSize:'.9rem',marginBottom:4}}>📁 {schedOpenFolder} — {folderTests.length} tests</div>
+                    {folderTests.map((t,i)=>{
+                      const existing = schedules.find(s=>s.testPath===t.path)
+                      const isScheduled = existing?.releaseAt
+                      const isPast = isScheduled && new Date(existing.releaseAt) <= Date.now()
+                      return(
+                        <div key={i} className="test-row" style={{padding:'12px 16px',display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}>
+                          <div style={{flex:1,minWidth:200}}>
+                            <div style={{fontWeight:700,fontSize:'.88rem',color:'#1a237e'}}>{t.title||t.path}</div>
+                            <div style={{fontSize:'.68rem',color:'#aaa',marginTop:2}}>{t.path}</div>
+                          </div>
+                          <div style={{display:'flex',alignItems:'center',gap:8}}>
+                            {isScheduled && !isPast && (
+                              <span style={{fontSize:'.7rem',background:'#fff3e0',color:'#e65100',border:'1px solid #ffcc80',padding:'3px 10px',borderRadius:20,fontWeight:600}}>
+                                🔒 Releases {new Date(existing.releaseAt).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}
+                              </span>
+                            )}
+                            {isPast && (
+                              <span style={{fontSize:'.7rem',background:'#f1f8f3',color:'#2e7d32',border:'1px solid #c8e6c9',padding:'3px 10px',borderRadius:20,fontWeight:600}}>✅ Available</span>
+                            )}
+                            {!isScheduled && (
+                              <span style={{fontSize:'.7rem',background:'#f1f8f3',color:'#2e7d32',border:'1px solid #c8e6c9',padding:'3px 10px',borderRadius:20,fontWeight:600}}>✅ Always Available</span>
+                            )}
+                            <input type="datetime-local"
+                              defaultValue={existing?.releaseAt ? new Date(existing.releaseAt).toISOString().slice(0,16) : ''}
+                              onChange={async(e)=>{
+                                const val = e.target.value
+                                const updated = schedules.filter(s=>s.testPath!==t.path)
+                                if (val) updated.push({ testPath:t.path, testTitle:t.title||t.path, releaseAt: new Date(val).toISOString() })
+                                setSchedules(updated)
+                                await fetch('/api/admin/schedule', {
+                                  method:'POST',
+                                  headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},
+                                  body:JSON.stringify({ schedules: updated })
+                                })
+                                flash(val ? `🔒 Scheduled for ${new Date(val).toLocaleString('en-IN')}` : '✅ Set to always available')
+                              }}
+                              style={{border:'1px solid #e8eaf6',borderRadius:7,padding:'5px 10px',fontSize:'.76rem',fontFamily:'Inter,sans-serif',color:'#1a237e',cursor:'pointer'}}
+                            />
+                            {isScheduled && (
+                              <button onClick={async()=>{
+                                const updated = schedules.filter(s=>s.testPath!==t.path)
+                                setSchedules(updated)
+                                await fetch('/api/admin/schedule',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},body:JSON.stringify({schedules:updated})})
+                                flash('✅ Schedule removed — test always available')
+                              }} style={{background:'transparent',border:'1px solid #ef5350',color:'#ef5350',padding:'5px 10px',borderRadius:7,fontSize:'.72rem',cursor:'pointer',fontFamily:'Inter,sans-serif'}}>Remove</button>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )
+              })()}
+
+              {/* Summary of all scheduled tests */}
+              {schedules.length > 0 && (
+                <div style={{marginTop:24}}>
+                  <div style={{fontWeight:700,color:'#1a237e',fontSize:'.85rem',marginBottom:8}}>All Scheduled Tests ({schedules.length})</div>
+                  {schedules.map((s,i)=>{
+                    const isPast = new Date(s.releaseAt) <= Date.now()
+                    return(
+                      <div key={i} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 14px',borderRadius:8,background:'#f8fafc',border:'1px solid #e8eaf6',marginBottom:6}}>
+                        <span style={{fontSize:'.8rem',flex:1,fontWeight:600,color:'#1a237e'}}>{s.testTitle||s.testPath}</span>
+                        <span style={{fontSize:'.7rem',color:isPast?'#2e7d32':'#e65100',fontWeight:600}}>
+                          {isPast?'✅':'🔒'} {new Date(s.releaseAt).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           )}
 

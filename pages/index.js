@@ -87,9 +87,13 @@ export default function Karle() {
   const [attempts, setAttempts]     = useState([])
   const [activeFolder, setActiveFolder] = useState(null)
   const [sbUser, setSbUser]         = useState(null)
+  const [schedules, setSchedules] = useState([])
   const [storageErr, setStorageErr]  = useState('')
   const [globalStats, setGlobalStats] = useState({ totalAttempts: 0 })
   const [exams, setExams]            = useState([])
+  useEffect(()=>{
+    fetch('/api/admin/schedule').then(r=>r.ok?r.json():[]).then(setSchedules).catch(()=>{})
+  },[])
 
   const timerRef  = useRef(null)
   const startRef  = useRef(null)
@@ -189,6 +193,19 @@ export default function Karle() {
   const startFromTree = async (testPath) => {
     if (!sbUser) { window.location.href = '/login'; return }
     if (cbtLoading) return
+    // Check schedule
+    try {
+      const r = await fetch('/api/admin/schedule')
+      if (r.ok) {
+        const sched = await r.json()
+        const entry = sched.find(s => s.testPath === testPath)
+        if (entry?.releaseAt && new Date(entry.releaseAt) > Date.now()) {
+          const dt = new Date(entry.releaseAt).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})
+          alert(`🔒 This test releases on ${dt}\nPlease come back then.`)
+          return
+        }
+      }
+    } catch(e) {}
     setCbtLoading(true)
     try {
       let d
@@ -645,16 +662,24 @@ export default function Karle() {
   // ── Test row component (list style like screenshot) ───────────────────────
   const TestRow = ({ t, ci }) => {
     const att = attempts.find(a=>a.testId===t.id||a.testId===t.path||('__storage__'+a.testId)===t.path||a.testPath===t.path)
+    const sched = schedules.find(s=>s.testPath===t.path)
+    const isLocked = sched?.releaseAt && new Date(sched.releaseAt) > Date.now()
+    const releaseLabel = isLocked ? new Date(sched.releaseAt).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : null
     return (
       <div className={`trow-card${cbtLoading?' trow-dim':''}`}>
         <div className="trow-left">
-          <div className="trow-status-dot" style={{background: att?'#22c55e':'#e0e4ff', border: att?'none':'1.5px solid #c5cae9'}}/>
+          <div className="trow-status-dot" style={{background: att?'#22c55e':isLocked?'#f59e0b':'#e0e4ff', border: att||isLocked?'none':'1.5px solid #c5cae9'}}/>
           <div style={{flex:1,minWidth:0}}>
             <div className="trow-title">{t.title}</div>
             <div className="trow-meta">
               {t.subject||'Exam'} · {t.questionCount||t.questions?.length||'?'} Questions · +{t.mCor||3}/−{t.mNeg||1} · {t.dur||180} min
               {t.hasBonus && <span className="trow-bonus">Bonus</span>}
             </div>
+            {isLocked && (
+              <div style={{marginTop:4,fontSize:'.7rem',color:'#f59e0b',fontWeight:600,display:'flex',alignItems:'center',gap:4}}>
+                🔒 Releasing: {releaseLabel}
+              </div>
+            )}
             {att && (
               <div className="trow-att-row">
                 <span className="trow-att-score" style={{color:att.score>=0?'#2e7d32':'#c62828'}}>Score: {att.score}/{att.maxScore}</span>
@@ -679,7 +704,11 @@ export default function Karle() {
             }}>View Analysis</button>
             <button className="trow-btn primary" onClick={()=>{deleteAttempt(att.id);startFromTree(t.path)}}>Reattempt</button>
             <button className="trow-btn danger" title="Delete attempt" onClick={()=>{if(confirm('Delete this attempt?'))deleteAttempt(att.id)}}>🗑</button>
-          </> : (
+          </> : isLocked ? (
+            <button className="trow-btn" disabled style={{background:'#1e293b',border:'1.5px solid #f59e0b',color:'#f59e0b',opacity:.9,cursor:'not-allowed',padding:'7px 16px',borderRadius:8,fontSize:'.78rem',fontWeight:700}}>
+              🔒 Locked
+            </button>
+          ) : (
             <button className="trow-btn primary" onClick={()=>!cbtLoading&&startFromTree(t.path)} disabled={cbtLoading}>
               {cbtLoading?'Loading…':'Start Test'}
             </button>

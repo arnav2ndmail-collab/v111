@@ -279,22 +279,23 @@ export default function Analytics() {
           <span className="nav-label">Logout</span>
         </button>
 
-        <div className="series-btn" style={{position:'relative'}}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-          <div className="series-btn-lbl" onClick={()=>setFolderOpen(o=>!o)} style={{cursor:'pointer',userSelect:'none'}}>
-            {activeFolder === 'All' ? 'All Tests' : activeFolder}
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="12" height="12" style={{marginLeft:4}}><polyline points="6 9 12 15 18 9"/></svg>
-          </div>
-          {folderOpen && (
-            <div style={{position:'absolute',bottom:'110%',left:0,right:0,background:'#1a2234',border:'1px solid #2d3748',borderRadius:10,overflow:'hidden',zIndex:100,boxShadow:'0 8px 24px rgba(0,0,0,.4)'}}>
-              {folders.map(f=>(
-                <div key={f} onClick={()=>{setActiveFolder(f);setFolderOpen(false)}} style={{padding:'9px 14px',cursor:'pointer',fontSize:'.78rem',fontWeight:600,color:activeFolder===f?'#6366f1':'#94a3b8',background:activeFolder===f?'rgba(99,102,241,.1)':'transparent',transition:'all .12s'}}
-                  onMouseEnter={e=>e.currentTarget.style.background='rgba(99,102,241,.08)'}
-                  onMouseLeave={e=>e.currentTarget.style.background=activeFolder===f?'rgba(99,102,241,.1)':'transparent'}
-                >{f === 'All' ? '📂 All Tests' : `📁 ${f}`}</div>
-              ))}
+        {/* Folder selector — clickable list */}
+        <div style={{marginBottom:16}}>
+          <div style={{fontSize:'.6rem',fontWeight:700,color:'#475569',textTransform:'uppercase',letterSpacing:'1px',marginBottom:8,paddingLeft:4}}>My Tests</div>
+          {folders.map(f=>(
+            <div key={f} onClick={()=>setActiveFolder(f)}
+              style={{display:'flex',alignItems:'center',gap:8,padding:'8px 10px',borderRadius:8,cursor:'pointer',marginBottom:3,
+                background:activeFolder===f?'rgba(99,102,241,.15)':'transparent',
+                border:activeFolder===f?'1px solid rgba(99,102,241,.3)':'1px solid transparent',
+                transition:'all .15s'}}
+              onMouseEnter={e=>{if(activeFolder!==f)e.currentTarget.style.background='rgba(255,255,255,.04)'}}
+              onMouseLeave={e=>{if(activeFolder!==f)e.currentTarget.style.background='transparent'}}
+            >
+              <span style={{fontSize:'.85rem'}}>{f==='All'?'📂':'📁'}</span>
+              <span style={{fontSize:'.78rem',fontWeight:600,color:activeFolder===f?'#818cf8':'#94a3b8',flex:1}}>{f==='All'?'All Tests':f}</span>
+              {activeFolder===f&&<svg viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.5" width="12" height="12"><polyline points="20 6 9 17 4 12"/></svg>}
             </div>
-          )}
+          ))}
         </div>
       </div>
 
@@ -311,10 +312,6 @@ export default function Analytics() {
             {/* LEFT PANEL */}
             <div className="left-panel">
               <div className="pack-selector">
-                <div className="pack-label">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-                  My Tests
-                </div>
               </div>
 
               <div className="pack-title">{activeFolder === 'All' ? 'All Tests' : activeFolder}</div>
