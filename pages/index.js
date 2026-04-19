@@ -427,7 +427,7 @@ export default function Karle() {
               testId: cfg.id || cfg.testPath || cfg.title,
               testPath: cfg.testPath || cfg.id || '',
               testTitle: cfg.title || 'Test',
-              subject: cfg.subject || 'BITSAT',
+              subject: cfg.subject || 'Exam',
               score: res.score || 0, maxScore: res.max || 0,
               correct: res.cor || 0, wrong: res.wrg || 0,
               skipped: res.skp || 0, unattempted: res.un || 0,
@@ -652,7 +652,7 @@ export default function Karle() {
           <div style={{flex:1,minWidth:0}}>
             <div className="trow-title">{t.title}</div>
             <div className="trow-meta">
-              {t.subject||'BITSAT'} · {t.questionCount||t.questions?.length||'?'} Questions · +{t.mCor||3}/−{t.mNeg||1} · {t.dur||180} min
+              {t.subject||'Exam'} · {t.questionCount||t.questions?.length||'?'} Questions · +{t.mCor||3}/−{t.mNeg||1} · {t.dur||180} min
               {t.hasBonus && <span className="trow-bonus">Bonus</span>}
             </div>
             {att && (
@@ -718,7 +718,13 @@ export default function Karle() {
             </div>
           </div>
         </div>
-        {!tests.length
+        {!sbUser ? (
+          <div className="lib-empty" style={{gap:12}}>
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="1.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <div style={{fontWeight:700,color:'#e2e8f0'}}>Login to access tests</div>
+            <a href="/login" style={{background:'#6366f1',color:'white',padding:'8px 22px',borderRadius:8,fontSize:'.82rem',fontWeight:700,textDecoration:'none'}}>Log In / Sign Up</a>
+          </div>
+        ) : !tests.length
           ? <div className="lib-empty"><div>No tests found</div></div>
           : <div className="trow-list">{tests.map((t,i)=><TestRow key={t.path||t.id} t={t} ci={i}/>)}</div>
         }
@@ -752,7 +758,7 @@ export default function Karle() {
   return (
     <>
       <Head>
-        <title>Karle — BITSAT Practice Platform</title>
+        <title>Karle — Exam Practice Platform</title>
         <link rel="icon" href="/logo.svg"/>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
       </Head>
@@ -1134,7 +1140,7 @@ export default function Karle() {
 }
 
 function HeroTypewriter() {
-  const words = ['BITSAT', 'JEE Main', 'JEE Adv', 'BITSAT', 'Your Exam']
+  const words = ['JEE Main', 'JEE Advanced', 'BITSAT', 'CUET', 'Your Exam']
   const [wordIdx, setWordIdx] = useState(0)
   const [txt, setTxt] = useState('')
   const [deleting, setDeleting] = useState(false)
@@ -1168,7 +1174,7 @@ function HeroTypewriter() {
         <div className="hero-tw-word">
           {txt}<span className="hero-tw-cursor" style={{opacity:blink?1:0}}>|</span>
         </div>
-        <div className="hero-tw-sub">Full-length mock tests · Detailed analysis · BITSAT pattern</div>
+        <div className="hero-tw-sub">Full-length mock tests · Detailed analysis · Track your progress</div>
       </div>
     </div>
   )
@@ -1181,7 +1187,7 @@ function SecTitle({children,style}) {
 function TestCard({t, ci, onCBT, onDel, globalLoading, attempt, onAnalyse, onReattempt}) {
   const PALETTE=['#1a237e','#1b5e20','#b71c1c','#4a148c','#e65100','#006064','#37474f']
   const accent = t.accentColor||PALETTE[ci%PALETTE.length]
-  const subj = t.subject||'BITSAT'
+  const subj = t.subject||'Exam'
   const isBitsat = subj.toUpperCase().includes('BITSAT')
   return (
     <div className={`tc${globalLoading?' tc-dimmed':''}`}>

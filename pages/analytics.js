@@ -16,6 +16,7 @@ const fmtDate = iso => { try { return new Date(iso).toLocaleDateString('en-IN',{
 const ANALYSIS_ITEMS = [
   { label:'Performance', icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg> },
   { label:'Timeline',    icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
+  { label:'Leaderboard', icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg> },
 ]
 
 export default function Analytics() {
@@ -602,7 +603,81 @@ export default function Analytics() {
                     </div>
                   </div>
                 </>
-              ) : section==='Leaderboard' ? null : (
+              ) : section==='Leaderboard' ? (
+                <>
+                  {/* Modal */}
+                  {lbTest && (
+                    <div onClick={()=>setLbTest(null)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,.7)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+                      <div onClick={e=>e.stopPropagation()} style={{background:'#141927',border:'1px solid #2d3748',borderRadius:18,width:'100%',maxWidth:520,maxHeight:'85vh',display:'flex',flexDirection:'column',overflow:'hidden',boxShadow:'0 24px 80px rgba(0,0,0,.6)'}}>
+                        <div style={{padding:'16px 20px',borderBottom:'1px solid #2d3748',display:'flex',alignItems:'center',gap:12,flexShrink:0}}>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontWeight:800,fontSize:'.92rem',color:'#e2e8f0'}}>🏆 Leaderboard</div>
+                            <div style={{fontSize:'.7rem',color:'#64748b',marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{lbTest.test_title}</div>
+                          </div>
+                          <button onClick={()=>setLbTest(null)} style={{background:'transparent',border:'1px solid #2d3748',color:'#64748b',width:30,height:30,borderRadius:7,cursor:'pointer',fontSize:'1rem',display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
+                        </div>
+                        {!lbLoading && lbData?.myRank && (
+                          <div style={{padding:'12px 20px',borderBottom:'1px solid #2d3748',background:'rgba(99,102,241,.08)',flexShrink:0,display:'flex',alignItems:'center',gap:12}}>
+                            <div style={{fontSize:'1.6rem',fontWeight:900,color:'#6366f1',minWidth:44,textAlign:'center'}}>#{lbData.myRank.rank}</div>
+                            <div style={{flex:1}}>
+                              <div style={{fontWeight:700,color:'#e2e8f0',fontSize:'.85rem'}}>You · {lbData.myRank.name}</div>
+                              <div style={{fontSize:'.68rem',color:'#94a3b8'}}>Score {lbData.myRank.score}/{lbData.myRank.maxScore} · {lbData.myRank.accuracy}% accuracy</div>
+                            </div>
+                            <div style={{fontSize:'.68rem',color:'#475569',flexShrink:0}}>{lbData.total} participants</div>
+                          </div>
+                        )}
+                        <div style={{overflowY:'auto',flex:1,padding:'12px 16px',display:'flex',flexDirection:'column',gap:6}}>
+                          {lbLoading ? <div className="state"><div className="spin"/><p>Loading…</p></div>
+                          : !lbData?.leaderboard?.length ? <div className="state"><p>No entries yet</p></div>
+                          : lbData.leaderboard.map((row,i)=>(
+                            <div key={i} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',borderRadius:10,border:`1.5px solid ${row.isYou?'#6366f1':'#1e293b'}`,background:row.isYou?'rgba(99,102,241,.08)':'transparent'}}>
+                              <div style={{width:30,height:30,borderRadius:7,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:800,fontSize:'.78rem',flexShrink:0,background:i===0?'#f59e0b':i===1?'#94a3b8':i===2?'#cd7c3a':'#1e293b',color:i<3?'#0a0e1a':'#64748b'}}>
+                                {i===0?'🥇':i===1?'🥈':i===2?'🥉':row.rank}
+                              </div>
+                              <div style={{flex:1,minWidth:0}}>
+                                <div style={{fontWeight:600,fontSize:'.83rem',color:row.isYou?'#818cf8':'#e2e8f0',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{row.name}{row.isYou?' (You)':''}</div>
+                                <div style={{fontSize:'.62rem',color:'#475569'}}>✓ {row.correct} · ✗ {row.wrong}</div>
+                              </div>
+                              <div style={{textAlign:'right',flexShrink:0}}>
+                                <div style={{fontWeight:800,fontSize:'.88rem',color:'#f59e0b'}}>{row.score}</div>
+                                <div style={{fontSize:'.6rem',color:'#64748b'}}>{row.accuracy}%</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div className="performance-card animate-in">
+                    <h3 className="section-title">🏆 Leaderboard</h3>
+                    <p style={{fontSize:'.75rem',color:'#64748b',marginBottom:16}}>Select a test to see your rank among all users</p>
+                    {!filtered.length ? (
+                      <div className="state"><p>No tests attempted yet</p><a href="/">Start a Test →</a></div>
+                    ) : (
+                      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(190px,1fr))',gap:10}}>
+                        {filtered.slice().reverse().map((a,i)=>{
+                          const sp=pct(a.score,a.max_score)
+                          const col=sp>=60?'#10b981':sp>=40?'#f59e0b':'#ef4444'
+                          return(
+                            <div key={i} style={{background:'#0d1220',border:'1px solid #1e293b',borderRadius:12,padding:14,display:'flex',flexDirection:'column',gap:8}}>
+                              <div style={{fontSize:'.75rem',fontWeight:700,color:'#94a3b8',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{a.test_title}</div>
+                              <div style={{fontSize:'.62rem',color:'#475569'}}>{fmtDate(a.taken_at)}</div>
+                              <div style={{display:'flex',gap:10,alignItems:'center'}}>
+                                <div style={{fontWeight:800,fontSize:'1.1rem',color:col}}>{sp}%</div>
+                                <div style={{fontSize:'.65rem',color:'#64748b'}}>{a.score}/{a.max_score} pts</div>
+                              </div>
+                              <button onClick={()=>loadLeaderboard(a)} style={{marginTop:'auto',width:'100%',background:'rgba(99,102,241,.1)',border:'1px solid rgba(99,102,241,.3)',color:'#818cf8',padding:'7px 0',borderRadius:8,fontSize:'.72rem',fontWeight:700,cursor:'pointer',fontFamily:'Inter,sans-serif',transition:'all .15s'}}
+                                onMouseEnter={e=>e.currentTarget.style.background='rgba(99,102,241,.25)'}
+                                onMouseLeave={e=>e.currentTarget.style.background='rgba(99,102,241,.1)'}
+                              >🏆 View Leaderboard</button>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
                 <div className="state">
                   <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#2d3748" strokeWidth="1.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                   <h2>{section}</h2>
