@@ -23,7 +23,7 @@ export default function SubmitTest() {
               <div style={{flex:1}}>
                 <div style={{fontWeight:800,fontSize:'1.05rem',color:'#e2e8f0',marginBottom:6}}>Build your test</div>
                 <p style={{color:'#64748b',fontSize:'.88rem',lineHeight:1.7,margin:'0 0 16px'}}>
-                  Use our free test builder to create your question paper. Add questions, images, options, and correct answers. Export it as a <code style={{background:'#1e293b',padding:'1px 6px',borderRadius:4,color:'#a5b4fc',fontSize:'.82rem'}}>.json</code> file when done.
+                  Use our free test builder to create your question paper. Add questions, images, options, and correct answers. Export it as a <code style={{background:'#1e293b',padding:'1px 6px',borderRadius:4,color:'#a5b4fc',fontSize:'.82rem'}}>.json</code> file when done. Tutorial: https://drive.google.com/file/d/1CkOslr0HgkhlxleSfI6UIbIuW7Qc5QIB/view?usp=sharing
                 </p>
                 <a href="https://builer.onrender.com/" target="_blank" rel="noopener noreferrer"
                   style={{display:'inline-flex',alignItems:'center',gap:8,background:'#6366f1',color:'white',padding:'10px 22px',borderRadius:9,fontWeight:700,fontSize:'.85rem',textDecoration:'none',transition:'background .15s'}}
