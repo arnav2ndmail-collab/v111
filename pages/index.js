@@ -91,6 +91,7 @@ export default function Karle() {
   const [storageErr, setStorageErr]  = useState('')
   const [globalStats, setGlobalStats] = useState({ totalAttempts: 0 })
   const [exams, setExams]            = useState([])
+  const [announcement, setAnnouncement] = useState(null)
   useEffect(()=>{
     fetch('/api/admin/schedule').then(r=>r.ok?r.json():[]).then(setSchedules).catch(()=>{})
   },[])
@@ -110,7 +111,7 @@ export default function Karle() {
     setAttempts(JSON.parse(localStorage.getItem(ATTEMPTS_KEY)||'[]'))
     // Load global stats + exam countdowns
     fetch('/api/site-stats').then(r=>r.ok?r.json():null).then(d=>{
-      if(d){ setGlobalStats({ totalAttempts: d.totalAttempts||0 }); setExams(d.exams||[]) }
+      if(d){ setGlobalStats({ totalAttempts: d.totalAttempts||0 }); setExams(d.exams||[]); setAnnouncement(d.announcement||null) }
     }).catch(()=>{})
     // Check Supabase session + load cloud attempts + bookmarks
     if (isSupabaseReady()) {
@@ -805,6 +806,26 @@ export default function Karle() {
       <style>{CSS}</style>
 
       <Nav active="Library"/>
+
+      {/* Top Announcement Banner */}
+      {announcement && (
+        <div style={{
+          background: announcement.type==='new'?'linear-gradient(90deg,#6366f1,#8b5cf6)':
+                      announcement.type==='warning'?'linear-gradient(90deg,#f59e0b,#ef4444)':
+                      'linear-gradient(90deg,#10b981,#059669)',
+          padding:'10px 20px',display:'flex',alignItems:'center',justifyContent:'center',
+          gap:12,position:'relative',zIndex:50
+        }}>
+          <span style={{fontSize:'1rem'}}>{announcement.emoji||'📢'}</span>
+          <span style={{fontWeight:700,color:'white',fontSize:'.88rem'}}>{announcement.text}</span>
+          {announcement.link && (
+            <a href={announcement.link} target={announcement.link.startsWith('http')?'_blank':'_self'}
+              style={{background:'rgba(255,255,255,.2)',color:'white',padding:'3px 12px',borderRadius:20,fontSize:'.76rem',fontWeight:700,textDecoration:'none',border:'1px solid rgba(255,255,255,.3)',whiteSpace:'nowrap'}}>
+              {announcement.linkLabel||'View →'}
+            </a>
+          )}
+        </div>
+      )}
 
       {page==='library' && (
         <div className="lib-shell anim">

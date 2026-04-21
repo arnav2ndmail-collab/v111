@@ -22,34 +22,31 @@ export default async function handler(req, res) {
       .from('test_attempts')
       .select('*', { count: 'exact', head: true })
 
-    // Exam countdowns stored in site_config table
-    const { data: cfg } = await sb
-      .from('site_config')
-      .select('value')
-      .eq('key', 'exams')
-      .maybeSingle()
+    // Exam countdowns
+    const { data: cfg } = await sb.from('site_config').select('value').eq('key', 'exams').maybeSingle()
+    // Announcement banner
+    const { data: ann } = await sb.from('site_config').select('value').eq('key', 'announcement').maybeSingle()
 
     return res.status(200).json({
       totalAttempts: count || 0,
-      exams: cfg?.value || []
+      exams: cfg?.value || [],
+      announcement: ann?.value || null
     })
   }
 
   // ── POST — admin saves exams ────────────────────────────────────────────
   if (req.method === 'POST') {
-    const adminEmail = process.env.ADMIN_EMAIL
-    const adminPass  = process.env.ADMIN_PASS
     const token = (req.headers.authorization || '').replace('Bearer ', '')
-    const { exams } = req.body
-    // Accept either bearer token from admin session or email:pass combo
     const validToken = token && token.length > 10
     if (!validToken) return res.status(401).json({ error: 'Unauthorized' })
 
-    const { error } = await sb
-      .from('site_config')
-      .upsert({ key: 'exams', value: exams || [] }, { onConflict: 'key' })
-
-    if (error) return res.status(500).json({ error: error.message })
+    const { exams, announcement } = req.body
+    const ops = []
+    if (exams !== undefined) ops.push(sb.from('site_config').upsert({ key: 'exams', value: exams || [] }, { onConflict: 'key' }))
+    if (announcement !== undefined) ops.push(sb.from('site_config').upsert({ key: 'announcement', value: announcement }, { onConflict: 'key' }))
+    const results = await Promise.all(ops)
+    const err = results.find(r => r.error)
+    if (err) return res.status(500).json({ error: err.error.message })
     return res.status(200).json({ ok: true })
   }
 

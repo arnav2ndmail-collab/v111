@@ -16,6 +16,33 @@ export default function SubmitTest() {
             <p style={{color:'#64748b',fontSize:'1rem',margin:0,lineHeight:1.6}}>Create your own CBT-style mock test and share it with everyone on Karle</p>
           </div>
 
+          {/* Tutorial Video */}
+          <div style={{background:'#141927',border:'1px solid #2d3748',borderRadius:16,padding:'28px 32px',marginBottom:20}}>
+            <div style={{display:'flex',alignItems:'flex-start',gap:16,marginBottom:20}}>
+              <div style={{width:36,height:36,background:'#ef4444',borderRadius:10,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.1rem',flexShrink:0}}>▶️</div>
+              <div>
+                <div style={{fontWeight:800,fontSize:'1.05rem',color:'#e2e8f0',marginBottom:4}}>Watch the tutorial</div>
+                <p style={{color:'#64748b',fontSize:'.85rem',margin:0,lineHeight:1.6}}>See how to build and export your test using the builder</p>
+              </div>
+            </div>
+            {/* Google Drive embed */}
+            <div style={{position:'relative',paddingBottom:'56.25%',height:0,borderRadius:12,overflow:'hidden',background:'#0a0e1a',border:'1px solid #1e293b'}}>
+              <iframe
+                src="https://drive.google.com/file/d/1CkOslr0HgkhlxleSfI6UIbIuW7Qc5QIB/preview"
+                style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',border:'none'}}
+                allow="autoplay"
+                allowFullScreen
+              />
+            </div>
+            <a href="https://drive.google.com/file/d/1CkOslr0HgkhlxleSfI6UIbIuW7Qc5QIB/view?usp=sharing"
+              target="_blank" rel="noopener noreferrer"
+              style={{display:'inline-flex',alignItems:'center',gap:6,marginTop:12,color:'#64748b',fontSize:'.75rem',textDecoration:'none'}}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Open in Google Drive if video doesn't load
+            </a>
+          </div>
+
           {/* Step 1 — Builder */}
           <div style={{background:'#141927',border:'1px solid #2d3748',borderRadius:16,padding:'28px 32px',marginBottom:20}}>
             <div style={{display:'flex',alignItems:'flex-start',gap:16}}>
@@ -23,7 +50,7 @@ export default function SubmitTest() {
               <div style={{flex:1}}>
                 <div style={{fontWeight:800,fontSize:'1.05rem',color:'#e2e8f0',marginBottom:6}}>Build your test</div>
                 <p style={{color:'#64748b',fontSize:'.88rem',lineHeight:1.7,margin:'0 0 16px'}}>
-                  Use our free test builder to create your question paper. Add questions, images, options, and correct answers. Export it as a <code style={{background:'#1e293b',padding:'1px 6px',borderRadius:4,color:'#a5b4fc',fontSize:'.82rem'}}>.json</code> file when done. Tutorial: https://drive.google.com/file/d/1CkOslr0HgkhlxleSfI6UIbIuW7Qc5QIB/view?usp=sharing
+                  Use our free test builder to create your question paper. Add questions, images, options, and correct answers. Export it as a <code style={{background:'#1e293b',padding:'1px 6px',borderRadius:4,color:'#a5b4fc',fontSize:'.82rem'}}>.json</code> file when done.
                 </p>
                 <a href="https://builer.onrender.com/" target="_blank" rel="noopener noreferrer"
                   style={{display:'inline-flex',alignItems:'center',gap:8,background:'#6366f1',color:'white',padding:'10px 22px',borderRadius:9,fontWeight:700,fontSize:'.85rem',textDecoration:'none',transition:'background .15s'}}

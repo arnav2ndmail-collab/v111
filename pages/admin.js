@@ -358,6 +358,13 @@ export default function AdminPage() {
   // Announcements
   const [whatsNew, setWhatsNew] = useState([])
   const [wnText, setWnText]  = useState('')
+  // Top banner announcement
+  const [annText, setAnnText]   = useState('')
+  const [annEmoji, setAnnEmoji] = useState('🆕')
+  const [annType, setAnnType]   = useState('new')
+  const [annLink, setAnnLink]   = useState('')
+  const [annLinkLabel, setAnnLinkLabel] = useState('')
+  const [annActive, setAnnActive] = useState(false)
   // Scheduling
   const [schedules, setSchedules]   = useState([])  // [{testPath, testTitle, releaseAt}]
   const [schedFolders, setSchedFolders] = useState({}) // {folderName: [tests]}
@@ -403,8 +410,15 @@ export default function AdminPage() {
       setSiteStats({ totalAttempts: d.totalAttempts||0 })
       setExams(d.exams||[])
       setWhatsNew(d.whatsNew||[])
+      if (d.announcement) {
+        setAnnText(d.announcement.text||'')
+        setAnnEmoji(d.announcement.emoji||'🆕')
+        setAnnType(d.announcement.type||'new')
+        setAnnLink(d.announcement.link||'')
+        setAnnLinkLabel(d.announcement.linkLabel||'')
+        setAnnActive(true)
+      }
     } catch(e) {}
-    // Load schedules
     try {
       const r = await fetch('/api/admin/schedule')
       if (r.ok) setSchedules(await r.json())
@@ -542,6 +556,7 @@ export default function AdminPage() {
               ['tests','📋','All Tests'],
               ['schedule','🗓️','Schedule'],
               ['exams','📅','Exam Dates'],
+              ['announce','📢','Announce'],
               ['users','👥','Users'],
               ['solutions','📄','Solutions'],
               ['json','📤','JSON Upload'],
@@ -754,6 +769,89 @@ export default function AdminPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* ═══ ANNOUNCE ═══ */}
+          {tab==='announce' && (
+            <div className="section">
+              <div className="sec-head">
+                <h1>📢 Top Banner Announcement</h1>
+                <p>Shows a full-width coloured banner at the very top of the site for all users</p>
+              </div>
+
+              {/* Preview */}
+              {annText && (
+                <div style={{marginBottom:20}}>
+                  <div style={{fontSize:'.7rem',fontWeight:700,color:'#888',textTransform:'uppercase',letterSpacing:'1px',marginBottom:8}}>Preview</div>
+                  <div style={{
+                    background: annType==='new'?'linear-gradient(90deg,#6366f1,#8b5cf6)':
+                                annType==='warning'?'linear-gradient(90deg,#f59e0b,#ef4444)':
+                                'linear-gradient(90deg,#10b981,#059669)',
+                    padding:'10px 20px',borderRadius:10,display:'flex',alignItems:'center',justifyContent:'center',gap:12,flexWrap:'wrap'
+                  }}>
+                    <span style={{fontSize:'1rem'}}>{annEmoji}</span>
+                    <span style={{fontWeight:700,color:'white',fontSize:'.88rem'}}>{annText}</span>
+                    {annLink && <span style={{background:'rgba(255,255,255,.25)',color:'white',padding:'3px 12px',borderRadius:20,fontSize:'.76rem',fontWeight:700,border:'1px solid rgba(255,255,255,.3)'}}>{annLinkLabel||'View →'}</span>}
+                  </div>
+                </div>
+              )}
+
+              <div className="format-box">
+                <div className="fb-title">Banner Settings</div>
+                {/* Type */}
+                <div style={{marginBottom:14}}>
+                  <label className="flabel">Type / Colour</label>
+                  <div style={{display:'flex',gap:8}}>
+                    {[['new','🟣 New / Update','linear-gradient(90deg,#6366f1,#8b5cf6)'],['success','🟢 Success / Live','linear-gradient(90deg,#10b981,#059669)'],['warning','🟠 Warning / Urgent','linear-gradient(90deg,#f59e0b,#ef4444)']].map(([val,label,bg])=>(
+                      <button key={val} onClick={()=>setAnnType(val)} style={{flex:1,padding:'8px 12px',borderRadius:8,border:`2px solid ${annType===val?'#6366f1':'#e8eaf6'}`,background:annType===val?'#ede9fe':'white',cursor:'pointer',fontFamily:'Inter,sans-serif',fontSize:'.75rem',fontWeight:600,color:'#1a237e',transition:'all .15s'}}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {/* Emoji + Text */}
+                <div style={{display:'flex',gap:10,marginBottom:14}}>
+                  <div style={{width:80}}>
+                    <label className="flabel">Emoji</label>
+                    <input className="finput" style={{marginBottom:0,textAlign:'center',fontSize:'1.2rem'}} value={annEmoji} onChange={e=>setAnnEmoji(e.target.value)} placeholder="🆕"/>
+                  </div>
+                  <div style={{flex:1}}>
+                    <label className="flabel">Message</label>
+                    <input className="finput" style={{marginBottom:0}} value={annText} onChange={e=>setAnnText(e.target.value)} placeholder="e.g. New test uploaded: BITSAT 2026 Mock 3 🎉"/>
+                  </div>
+                </div>
+                {/* Link */}
+                <div style={{display:'flex',gap:10,marginBottom:20}}>
+                  <div style={{flex:2}}>
+                    <label className="flabel">Link URL (optional)</label>
+                    <input className="finput" style={{marginBottom:0}} value={annLink} onChange={e=>setAnnLink(e.target.value)} placeholder="e.g. / or https://..."/>
+                  </div>
+                  <div style={{flex:1}}>
+                    <label className="flabel">Button Label</label>
+                    <input className="finput" style={{marginBottom:0}} value={annLinkLabel} onChange={e=>setAnnLinkLabel(e.target.value)} placeholder="View →"/>
+                  </div>
+                </div>
+                {/* Actions */}
+                <div style={{display:'flex',gap:10}}>
+                  <button className="proc-btn" onClick={async()=>{
+                    const val = annText.trim() ? { text:annText.trim(), emoji:annEmoji, type:annType, link:annLink, linkLabel:annLinkLabel } : null
+                    const r = await fetch('/api/site-stats',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},body:JSON.stringify({announcement:val})})
+                    if(r.ok){ setAnnActive(!!val); flash(val?'📢 Announcement published!':'✅ Announcement cleared') }
+                    else flash('❌ Failed to save')
+                  }}>
+                    {annActive?'Update':'Publish'} Banner
+                  </button>
+                  {annActive && (
+                    <button onClick={async()=>{
+                      await fetch('/api/site-stats',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},body:JSON.stringify({announcement:null})})
+                      setAnnText(''); setAnnActive(false); flash('✅ Banner removed')
+                    }} style={{background:'transparent',border:'1.5px solid #ef5350',color:'#ef5350',padding:'8px 18px',borderRadius:8,fontFamily:'Inter,sans-serif',fontWeight:600,fontSize:'.8rem',cursor:'pointer'}}>
+                      Remove Banner
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           )}
