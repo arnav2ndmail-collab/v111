@@ -1180,7 +1180,7 @@ export default function Karle() {
 }
 
 function HeroTypewriter() {
-  const words = ['JEE Main', 'JEE Advanced', 'BITSAT', 'UGEE', 'COMEDK']
+  const words = ['JEE Main', 'JEE Advanced', 'BITSAT', 'CUET', 'Your Exam']
   const [wordIdx, setWordIdx] = useState(0)
   const [txt, setTxt] = useState('')
   const [deleting, setDeleting] = useState(false)
