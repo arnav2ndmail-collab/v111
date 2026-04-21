@@ -51,15 +51,8 @@ function loadResume() {
 function clearResume() {
   try { localStorage.removeItem(RESUME_KEY) } catch(e) {}
 }
-// Attempt: scores + answers only (no images) + testPath to re-fetch
-function saveAttempt(attempt) {
-  try {
-    const prev = JSON.parse(localStorage.getItem(ATTEMPTS_KEY)||'[]')
-    const updated = [attempt, ...prev.filter(a=>a.testId!==attempt.testId)].slice(0,30)
-    localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(updated))
-    return updated
-  } catch(e) { return [] }
-}
+// Attempt save is now cloud-only. This function is kept for compatibility but does nothing local.
+function saveAttempt(attempt) { return [] }
 
 export default function Karle() {
   const [page, setPage]             = useState('library')
@@ -108,7 +101,7 @@ export default function Karle() {
 
   useEffect(() => {
     setSavedTests(JSON.parse(localStorage.getItem(SAVED_KEY)||'[]'))
-    setAttempts(JSON.parse(localStorage.getItem(ATTEMPTS_KEY)||'[]'))
+    // NOTE: attempts are NOT loaded from localStorage - cloud only
     // Load global stats + exam countdowns
     fetch('/api/site-stats').then(r=>r.ok?r.json():null).then(d=>{
       if(d){ setGlobalStats({ totalAttempts: d.totalAttempts||0 }); setExams(d.exams||[]); setAnnouncement(d.announcement||null) }
@@ -119,19 +112,12 @@ export default function Karle() {
         if (data.session) {
           setSbUser(data.session.user)
           const token = data.session.access_token
-          // Load cloud attempts
+          // Load cloud attempts — ONLY source of truth, no localStorage merge
           try {
             const r = await fetch('/api/cloud-attempts', { headers: { Authorization: `Bearer ${token}` } })
             if (r.ok) {
               const cloudAttempts = await r.json()
-              if (Array.isArray(cloudAttempts) && cloudAttempts.length > 0) {
-                const local = JSON.parse(localStorage.getItem(ATTEMPTS_KEY)||'[]')
-                const cloudIds = new Set(cloudAttempts.map(a => a.testId))
-                const localOnly = local.filter(a => !cloudIds.has(a.testId))
-                const merged = [...cloudAttempts, ...localOnly].slice(0, 50)
-                setAttempts(merged)
-                localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(merged))
-              }
+              setAttempts(Array.isArray(cloudAttempts) ? cloudAttempts : [])
             }
           } catch(e) { console.warn('Cloud attempts load failed:', e.message) }
           // Load cloud bookmarks
@@ -432,9 +418,8 @@ export default function Karle() {
           ((q.ans||'').toUpperCase().trim()===(finalAns[i]||'').toUpperCase().trim())?'correct':'wrong'
       }))
     }
-    const updated = saveAttempt(attempt)
-    setAttempts(updated)
-    // Save to cloud via server-side API (uses service role key, works cross-device)
+    const updated = saveAttempt(attempt) // no-op now
+    // Save to cloud — only source of truth
     if (isSupabaseReady() && sbUser) {
       try {
         const sb = getSupabase()
@@ -462,15 +447,16 @@ export default function Karle() {
               }))
             })
           })
+          // Reload attempts from cloud so UI reflects truth immediately
+          const r = await fetch('/api/cloud-attempts', { headers: { Authorization: `Bearer ${session.access_token}` } })
+          if (r.ok) {
+            const fresh = await r.json()
+            setAttempts(Array.isArray(fresh) ? fresh : [])
+          }
         }
       } catch(e) { console.warn('Cloud save failed:', e.message) }
     }
-    // Increment global counter
-    try {
-      const g = parseInt(localStorage.getItem('tz_global_tests')||'0')
-      localStorage.setItem('tz_global_tests', String(g+1))
-      setGlobalTests(g+1)
-    } catch(e) {}
+    // Global counter removed - now tracked server-side
   }, [Qs, cfg])
 
   const downloadOutputFile = (res) => {
@@ -527,10 +513,9 @@ export default function Karle() {
   }
 
   const deleteAttempt = async (id) => {
-    const updated = attempts.filter(a=>a.id!==id)
-    setAttempts(updated)
-    localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(updated))
-    // Also delete from cloud
+    // Update UI immediately
+    setAttempts(prev => prev.filter(a=>a.id!==id))
+    // Delete from cloud — only source of truth
     if (sbUser) {
       try {
         const sb = getSupabase()
