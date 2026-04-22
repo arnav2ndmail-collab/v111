@@ -460,38 +460,15 @@ export default function Karle() {
             marksCorrect: payload.marksCorrect, marksWrong: payload.marksWrong,
             subjStats: payload.subjStats, answers: payload.answers,
           }
-          setAttempts(prev => {
-            const without = prev.filter(a => a.testId !== payload.testId)
-            return [optimisticAttempt, ...without]
-          })
+          // Add to state immediately — keep all existing attempts, just replace same testId
+          setAttempts(prev => [optimisticAttempt, ...prev.filter(a => a.testId !== payload.testId)])
 
-          // Save to cloud
-          const saveRes = await fetch('/api/cloud-attempts', {
+          // Save to cloud in background — no reload, optimistic state is the truth
+          fetch('/api/cloud-attempts', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify(payload)
-          })
-          if (!saveRes.ok) {
-            console.warn('Cloud save failed:', await saveRes.text())
-          }
-          // Reload from cloud after delay — only update if cloud has MORE data
-          setTimeout(async () => {
-            try {
-              const r = await fetch('/api/cloud-attempts', { headers: { Authorization: `Bearer ${token}` } })
-              if (r.ok) {
-                const fresh = await r.json()
-                if (Array.isArray(fresh)) {
-                  setAttempts(prev => {
-                    // Only replace if cloud has real ids (no temp_ prefix) for all our attempts
-                    const hasTemp = prev.some(a => String(a.id).startsWith('temp_'))
-                    if (!hasTemp) return prev // already synced, don't overwrite
-                    // Replace temp entry with real cloud entry
-                    return fresh
-                  })
-                }
-              }
-            } catch(e) {}
-          }, 2000)
+          }).catch(e => console.warn('Cloud save error:', e.message))
         }
       } catch(e) { console.warn('Cloud save failed:', e.message) }
     }
