@@ -62,31 +62,33 @@ export default async function handler(req, res) {
   // ── POST — save an attempt ───────────────────────────────────────────────
   if (req.method === 'POST') {
     const b = req.body
-    // Upsert by test_id + user_id so re-taking replaces old row
-    const { data, error } = await sb
-      .from('test_attempts')
-      .upsert({
-        user_id: user.id,
-        test_id: b.testId || b.testPath || 'unknown',
-        test_path: b.testPath || '',
-        test_title: b.testTitle || 'Test',
-        subject: b.subject || 'BITSAT',
-        score: b.score ?? 0,
-        max_score: b.maxScore ?? 0,
-        correct: b.correct ?? 0,
-        wrong: b.wrong ?? 0,
-        skipped: b.skipped ?? 0,
-        unattempted: b.unattempted ?? 0,
-        accuracy: b.accuracy ?? 0,
-        duration: b.duration ?? 0,
-        marks_correct: b.marksCorrect ?? 3,
-        marks_wrong: b.marksWrong ?? 1,
-        subj_stats: b.subjStats || {},
-        answers: b.answers || [],
-        taken_at: new Date().toISOString(),
-      }, { onConflict: 'user_id,test_id' })
-      .select('id')
-      .single()
+    const testId = b.testId || b.testPath || 'unknown'
+
+    const row = {
+      user_id: user.id,
+      test_id: testId,
+      test_path: b.testPath || '',
+      test_title: b.testTitle || 'Test',
+      subject: b.subject || 'Exam',
+      score: b.score ?? 0,
+      max_score: b.maxScore ?? 0,
+      correct: b.correct ?? 0,
+      wrong: b.wrong ?? 0,
+      skipped: b.skipped ?? 0,
+      unattempted: b.unattempted ?? 0,
+      accuracy: b.accuracy ?? 0,
+      duration: b.duration ?? 0,
+      marks_correct: b.marksCorrect ?? 3,
+      marks_wrong: b.marksWrong ?? 1,
+      subj_stats: b.subjStats || {},
+      answers: b.answers || [],
+      taken_at: new Date().toISOString(),
+    }
+
+    // Delete existing row for this user+test first, then insert fresh
+    // This avoids the 409 conflict that upsert sometimes throws
+    await sb.from('test_attempts').delete().eq('user_id', user.id).eq('test_id', testId)
+    const { data, error } = await sb.from('test_attempts').insert(row).select('id').single()
     if (error) return res.status(500).json({ error: error.message })
     return res.status(200).json({ ok: true, id: data?.id })
   }
