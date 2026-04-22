@@ -425,33 +425,59 @@ export default function Karle() {
         const sb = getSupabase()
         const { data: { session } } = await sb.auth.getSession()
         if (session?.access_token) {
+          const token = session.access_token
+          const payload = {
+            testId: cfg.id || cfg.testPath || cfg.title,
+            testPath: cfg.testPath || cfg.id || '',
+            testTitle: cfg.title || 'Test',
+            subject: cfg.subject || 'Exam',
+            score: res.score || 0, maxScore: res.max || 0,
+            correct: res.cor || 0, wrong: res.wrg || 0,
+            skipped: res.skp || 0, unattempted: res.un || 0,
+            accuracy: res.pct || 0, duration: res.elapsed || 0,
+            marksCorrect: cfg.mCor || 3, marksWrong: cfg.mNeg || 1,
+            subjStats: res.subjStats || {},
+            answers: finalAns.map((a,i)=>({
+              yourAnswer: a,
+              correctAnswer: Qs[i]?.ans,
+              result: !a ? 'unattempted' : a==='skip' ? 'skipped'
+                : ((Qs[i]?.ans||'').toUpperCase().trim()===(a||'').toUpperCase().trim()) ? 'correct' : 'wrong'
+            }))
+          }
+
+          // Optimistically update UI immediately so user sees result right away
+          const optimisticAttempt = {
+            id: 'temp_' + Date.now(),
+            testId: payload.testId,
+            testPath: payload.testPath,
+            testTitle: payload.testTitle,
+            subject: payload.subject,
+            date: new Date().toISOString(),
+            score: payload.score, maxScore: payload.maxScore,
+            accuracy: payload.accuracy, correct: payload.correct,
+            wrong: payload.wrong, skipped: payload.skipped,
+            unattempted: payload.unattempted, duration: payload.duration,
+            marksCorrect: payload.marksCorrect, marksWrong: payload.marksWrong,
+            subjStats: payload.subjStats, answers: payload.answers,
+          }
+          setAttempts(prev => {
+            const without = prev.filter(a => a.testId !== payload.testId)
+            return [optimisticAttempt, ...without]
+          })
+
+          // Save to cloud
           await fetch('/api/cloud-attempts', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-            body: JSON.stringify({
-              testId: cfg.id || cfg.testPath || cfg.title,
-              testPath: cfg.testPath || cfg.id || '',
-              testTitle: cfg.title || 'Test',
-              subject: cfg.subject || 'Exam',
-              score: res.score || 0, maxScore: res.max || 0,
-              correct: res.cor || 0, wrong: res.wrg || 0,
-              skipped: res.skp || 0, unattempted: res.un || 0,
-              accuracy: res.pct || 0, duration: res.elapsed || 0,
-              marksCorrect: cfg.mCor || 3, marksWrong: cfg.mNeg || 1,
-              subjStats: res.subjStats || {},
-              answers: finalAns.map((a,i)=>({
-                yourAnswer: a,
-                correctAnswer: Qs[i]?.ans,
-                result: !a ? 'unattempted' : a==='skip' ? 'skipped'
-                  : ((Qs[i]?.ans||'').toUpperCase().trim()===(a||'').toUpperCase().trim()) ? 'correct' : 'wrong'
-              }))
-            })
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify(payload)
           })
-          // Reload attempts from cloud so UI reflects truth immediately
-          const r = await fetch('/api/cloud-attempts', { headers: { Authorization: `Bearer ${session.access_token}` } })
+
+          // Wait a moment then reload fresh from cloud to get real id
+          await new Promise(r => setTimeout(r, 800))
+          const r = await fetch('/api/cloud-attempts', { headers: { Authorization: `Bearer ${token}` } })
           if (r.ok) {
             const fresh = await r.json()
-            setAttempts(Array.isArray(fresh) ? fresh : [])
+            if (Array.isArray(fresh) && fresh.length > 0) setAttempts(fresh)
           }
         }
       } catch(e) { console.warn('Cloud save failed:', e.message) }
