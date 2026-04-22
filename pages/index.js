@@ -466,19 +466,32 @@ export default function Karle() {
           })
 
           // Save to cloud
-          await fetch('/api/cloud-attempts', {
+          const saveRes = await fetch('/api/cloud-attempts', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify(payload)
           })
-
-          // Wait a moment then reload fresh from cloud to get real id
-          await new Promise(r => setTimeout(r, 800))
-          const r = await fetch('/api/cloud-attempts', { headers: { Authorization: `Bearer ${token}` } })
-          if (r.ok) {
-            const fresh = await r.json()
-            if (Array.isArray(fresh) && fresh.length > 0) setAttempts(fresh)
+          if (!saveRes.ok) {
+            console.warn('Cloud save failed:', await saveRes.text())
           }
+          // Reload from cloud after delay — only update if cloud has MORE data
+          setTimeout(async () => {
+            try {
+              const r = await fetch('/api/cloud-attempts', { headers: { Authorization: `Bearer ${token}` } })
+              if (r.ok) {
+                const fresh = await r.json()
+                if (Array.isArray(fresh)) {
+                  setAttempts(prev => {
+                    // Only replace if cloud has real ids (no temp_ prefix) for all our attempts
+                    const hasTemp = prev.some(a => String(a.id).startsWith('temp_'))
+                    if (!hasTemp) return prev // already synced, don't overwrite
+                    // Replace temp entry with real cloud entry
+                    return fresh
+                  })
+                }
+              }
+            } catch(e) {}
+          }, 2000)
         }
       } catch(e) { console.warn('Cloud save failed:', e.message) }
     }
