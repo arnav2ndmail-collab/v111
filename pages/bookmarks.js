@@ -1,15 +1,47 @@
 import { useState, useEffect } from 'react'
 import Head from 'next/head'
 import Nav from '../components/Nav'
+import { getSupabase, isSupabaseReady } from '../lib/supabase'
 
 const BM_KEY = 'tz_bookmarks_v1'
 
-// Bookmarks storage: { notebookName: [ {qnum,subject,text,opts,correctAnswer,testTitle,testPath,savedAt}, ... ] }
 function loadBooks() {
   try { return JSON.parse(localStorage.getItem(BM_KEY)||'{}') } catch(e) { return {} }
 }
 function saveBooks(books) {
   try { localStorage.setItem(BM_KEY, JSON.stringify(books)) } catch(e) {}
+}
+
+async function loadCloudBooks() {
+  if (!isSupabaseReady()) return null
+  try {
+    const sb = getSupabase()
+    const { data: { session } } = await sb.auth.getSession()
+    if (!session?.access_token) return null
+    const r = await fetch('/api/cloud-bookmarks', {
+      headers: { Authorization: `Bearer ${session.access_token}` }
+    })
+    if (!r.ok) return null
+    const data = await r.json()
+    // cloud-bookmarks stores test bookmarks, we need question bookmarks
+    // Store question bookmarks separately in site_config per user via a different key
+    // For now use a dedicated endpoint
+    return null // will implement below
+  } catch(e) { return null }
+}
+
+async function syncCloudQBookmarks(books) {
+  if (!isSupabaseReady()) return
+  try {
+    const sb = getSupabase()
+    const { data: { session } } = await sb.auth.getSession()
+    if (!session?.access_token) return
+    await fetch('/api/cloud-qbookmarks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ books })
+    })
+  } catch(e) { console.warn('Bookmark sync failed:', e) }
 }
 
 const SUBJ_COLORS = {
@@ -34,16 +66,43 @@ export default function Bookmarks() {
   const [qImg, setQImg]             = useState(null)
   const [imgLoading, setImgLoading] = useState(false)
 
-  useEffect(() => { setBooks(loadBooks()) }, [])
+  useEffect(() => {
+    // Load local first for instant display
+    setBooks(loadBooks())
+    // Then load from cloud and merge
+    if (isSupabaseReady()) {
+      getSupabase().auth.getSession().then(async ({ data }) => {
+        if (!data.session?.access_token) return
+        try {
+          const r = await fetch('/api/cloud-qbookmarks', {
+            headers: { Authorization: `Bearer ${data.session.access_token}` }
+          })
+          if (r.ok) {
+            const cloudBooks = await r.json()
+            if (cloudBooks && typeof cloudBooks === 'object' && Object.keys(cloudBooks).length > 0) {
+              setBooks(cloudBooks)
+              saveBooks(cloudBooks)
+            }
+          }
+        } catch(e) { console.warn('Cloud bookmark load failed:', e) }
+      })
+    }
+  }, [])
 
   const nbNames = Object.keys(books)
+
+  const saveAndSync = (updated) => {
+    setBooks(updated)
+    saveBooks(updated)
+    syncCloudQBookmarks(updated)
+  }
 
   const createNotebook = () => {
     const n = newName.trim()
     if (!n) { setNewErr('Enter a name'); return }
     if (books[n]) { setNewErr('Already exists'); return }
     const updated = { ...books, [n]: [] }
-    setBooks(updated); saveBooks(updated)
+    saveAndSync(updated)
     setShowNew(false); setNewName(''); setNewErr('')
     setActiveNb(n)
   }
@@ -51,13 +110,13 @@ export default function Bookmarks() {
   const deleteNotebook = (nb) => {
     if (!confirm(`Delete notebook "${nb}" and all its questions?`)) return
     const updated = { ...books }; delete updated[nb]
-    setBooks(updated); saveBooks(updated)
+    saveAndSync(updated)
     if (activeNb === nb) setActiveNb(null)
   }
 
   const removeQ = (nb, idx) => {
     const updated = { ...books, [nb]: books[nb].filter((_,i)=>i!==idx) }
-    setBooks(updated); saveBooks(updated)
+    saveAndSync(updated)
     if (activeQ === books[nb][idx]) setActiveQ(null)
   }
 

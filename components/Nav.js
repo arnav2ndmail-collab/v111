@@ -33,6 +33,14 @@ export default function Nav({ active, extraLinks }) {
         .tz-nb{padding:6px 10px;border-radius:7px;font-weight:500;font-size:.76rem;color:rgba(255,255,255,.55);transition:all .15s;text-decoration:none;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;flex-shrink:0;border:none;background:transparent;cursor:pointer;font-family:'Inter',sans-serif}
         .tz-nb:hover{color:rgba(255,255,255,.9);background:rgba(255,255,255,.08)}
         .tz-nb.on{background:rgba(99,102,241,.2);color:white;font-weight:600}
+        .tz-nb-label{display:inline}
+        @media(max-width:600px){
+          header.tz-nav{padding:0 10px;gap:4px}
+          .tz-lt{display:none}
+          .tz-nb{padding:7px 8px}
+          .tz-nb-label{display:none}
+          .tz-nb svg{width:16px;height:16px}
+        }
       `}</style>
       <header className="tz-nav">
         <Link href="/" className="tz-logo">
@@ -41,7 +49,7 @@ export default function Nav({ active, extraLinks }) {
         </Link>
         <nav className="tz-nav-links">
           {NAV_LINKS.map(({href,label,svg})=>(
-            <Link key={href} href={href} className={`tz-nb${active===label?' on':''}`}>{svg}{label}</Link>
+            <Link key={href} href={href} className={`tz-nb${active===label?' on':''}`}>{svg}<span className="tz-nb-label">{label}</span></Link>
           ))}
           {extraLinks&&extraLinks.map(({label,onClick,isActive,svg})=>(
             <button key={label} onClick={onClick} className={`tz-nb${isActive?' on':''}`}>{svg}{label}</button>

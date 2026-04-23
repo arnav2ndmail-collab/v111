@@ -801,6 +801,7 @@ export default function Karle() {
     <>
       <Head>
         <title>Karle — Exam Practice Platform</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
         <link rel="icon" href="/logo.svg"/>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
       </Head>
@@ -1062,6 +1063,17 @@ export default function Karle() {
                   if(next<Qs.length&&Qs[next]?.isBonus&&!bonusUnlocked)return
                   if(next<Qs.length)goTo(next)
                 }}>Next →</button>
+              </div>
+
+              {/* Mobile bottom bar — shows on small screens only */}
+              <div className="cbt-mobile-bar">
+                <div className="cbt-mobile-stats">
+                  <div className="cbt-mobile-stat"><div className="cbt-mobile-stat-num" style={{color:'#10b981'}}>{stats.a}</div><div className="cbt-mobile-stat-lbl">Done</div></div>
+                  <div className="cbt-mobile-stat"><div className="cbt-mobile-stat-num" style={{color:'#f59e0b'}}>{stats.s}</div><div className="cbt-mobile-stat-lbl">Skip</div></div>
+                  <div className="cbt-mobile-stat"><div className="cbt-mobile-stat-num" style={{color:'#94a3b8'}}>{stats.r}</div><div className="cbt-mobile-stat-lbl">Left</div></div>
+                  <div className="cbt-mobile-stat"><div className="cbt-mobile-stat-num" style={{color:'#6366f1'}}>{cur+1}/{Qs.length}</div><div className="cbt-mobile-stat-lbl">Q</div></div>
+                </div>
+                <button className="cbt-submit-btn" onClick={()=>submitCbt(false)} style={{flexShrink:0}}>Submit</button>
               </div>
             </div>
 
@@ -1550,5 +1562,83 @@ body{background:#0a0e1a;color:#f1f5f9;font-family:'Inter',sans-serif;min-height:
 .hero-tw-word{font-size:2.2rem;font-weight:900;color:#fdd835;letter-spacing:-1px;line-height:1.1;margin-bottom:10px;min-height:2.6rem}
 .hero-tw-cursor{color:#fdd835;font-weight:300}
 .hero-tw-sub{font-size:.8rem;color:rgba(255,255,255,.6);font-weight:500}
+
+/* ═══ MOBILE RESPONSIVE ══════════════════════════════════════════════════ */
+@media(max-width:768px){
+  /* Nav */
+  .nav-bar{padding:0 10px;gap:6px}
+  .nav-links{gap:2px}
+  .nav-link{padding:5px 7px;font-size:.7rem}
+  .nav-link span{display:none}
+  .nav-link svg{display:block!important}
+
+  /* Library shell — stack sidebar above main */
+  .lib-shell{flex-direction:column;height:auto;min-height:calc(100vh - 56px)}
+  .lib-sidebar{width:100%;height:auto;border-right:none;border-bottom:1px solid #2d3748;flex-shrink:0}
+  .lib-sidebar-top{padding:10px}
+  .lib-search-wrap{width:100%}
+  .lib-search{width:100%}
+  .lib-tree{max-height:200px;overflow-y:auto}
+  .lib-sidebar-footer{display:none}
+  .lib-main{padding:12px;gap:10px}
+
+  /* Test rows — stack vertically */
+  .trow-card{flex-direction:column;align-items:flex-start;gap:10px;padding:14px}
+  .trow-actions{width:100%;justify-content:flex-end}
+  .trow-btn{padding:8px 14px;font-size:.75rem}
+  .trow-title{font-size:.88rem}
+  .trow-meta{font-size:.68rem}
+
+  /* Hero tiles */
+  .exam-tiles{gap:8px}
+  .exam-tile{min-width:120px;padding:10px 12px}
+  .exam-tile-num{font-size:1.4rem}
+  .stats-bar{flex-wrap:wrap;gap:8px}
+
+  /* CBT — hide right sidebar on mobile */
+  .sb{display:none}
+  .cbt-body{flex-direction:column}
+  .qpanel{flex:1}
+
+  /* CBT top bar */
+  .cbt-top{height:auto;padding:8px 12px;flex-wrap:wrap;gap:6px}
+  .cbt-test-title{font-size:.8rem}
+  .cbt-test-meta{font-size:.58rem}
+  .cbt-timer{font-size:.78rem;padding:4px 8px}
+  .cbt-submit-btn{padding:6px 12px;font-size:.74rem}
+  .cbt-exit-btn{padding:6px 8px;font-size:.72rem}
+
+  /* CBT subject tabs */
+  .subj-tabs{padding:0 6px;gap:2px}
+  .subj-tab{padding:0 8px;height:36px}
+  .subj-tab-name{font-size:.72rem}
+  .subj-tab-count{font-size:.55rem;padding:1px 5px}
+
+  /* CBT question */
+  .q-images{margin:0 8px;padding:12px 14px}
+  .qtext{margin:0 8px;padding:12px 14px;font-size:.9rem}
+  .opts{padding:8px 8px}
+  .opt{padding:10px 12px;gap:8px}
+  .otext{font-size:.84rem}
+  .olbl{width:28px;height:28px;font-size:.65rem}
+  .action-row{padding:6px 8px;gap:6px}
+  .btn-save-next{padding:9px 18px;font-size:.78rem}
+  .btn-skip,.btn-clear{padding:9px 12px;font-size:.74rem}
+  .nav-row{padding:8px}
+
+  /* Mobile submit bar — show bottom summary instead of right sidebar */
+  .cbt-mobile-bar{display:flex!important}
+
+  /* Result overlay */
+  .result-box{padding:20px 16px;margin:10px}
+  .res-score-num{font-size:2.4rem}
+}
+
+/* Mobile submit bar (hidden on desktop) */
+.cbt-mobile-bar{display:none;position:fixed;bottom:0;left:0;right:0;background:white;border-top:1.5px solid #e2e8f0;padding:10px 16px;gap:10px;align-items:center;z-index:100;box-shadow:0 -4px 20px rgba(0,0,0,.08)}
+.cbt-mobile-stats{display:flex;gap:12px;flex:1}
+.cbt-mobile-stat{display:flex;flex-direction:column;align-items:center}
+.cbt-mobile-stat-num{font-size:.9rem;font-weight:800;color:#1e293b}
+.cbt-mobile-stat-lbl{font-size:.52rem;color:#94a3b8;font-weight:600;text-transform:uppercase}
 `
 
