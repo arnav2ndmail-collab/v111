@@ -62,7 +62,7 @@ export default async function handler(req, res) {
             title: sf.name.replace('.json', '').replace(/_/g, ' ').replace(/-/g, ' '),
             path: `__storage__${folderName}/${sf.name}`,
             id: `storage__${folderName}__${sf.name}`,
-            subject: folderName.toUpperCase().includes('JEE') ? 'JEE' : 'BITSAT',
+            subject: folderName,
             storageUrl: publicUrl,
           })
         }
@@ -74,7 +74,7 @@ export default async function handler(req, res) {
           title: item.name.replace('.json', '').replace(/_/g, ' ').replace(/-/g, ' '),
           path: `__storage__${item.name}`,
           id: `storage__${item.name}`,
-          subject: 'BITSAT',
+          subject: item.name.replace('.json',''),
           storageUrl: publicUrl,
         })
       }

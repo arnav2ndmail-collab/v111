@@ -232,9 +232,9 @@ export default function Karle() {
     setVisited(new Array(qs.length).fill(false))
     setCur(0); setDone(false); setReviewing(false); setResult(null)
     setSecs(c.dur*60)
-    if (isBITSAT(c.subject||'')) {
-      const firstSubj = qs.find(q=>q.subject)?.subject || BITSAT_SUBJECTS[0]
-      setActiveNavSubj(firstSubj)
+    if (isBITSAT(c.subject||'') || qs.some(q=>q.subject)) {
+      const firstSubj = qs.find(q=>q.subject)?.subject
+      if (firstSubj) setActiveNavSubj(firstSubj)
     } else { setActiveNavSubj(null) }
     setCbtOn(true)
     setCbtLoading(false)
@@ -321,8 +321,8 @@ export default function Karle() {
       setCur(rd.cur || 0)
       setDone(false); setReviewing(false); setResult(null)
       setSecs(Math.max(0, (rd.cfg.dur*60) - (rd.elapsed||0)))
-      if (isBITSAT(rd.cfg.subject||'')) {
-        setActiveNavSubj(qs[rd.cur||0]?.subject || BITSAT_SUBJECTS[0])
+      if (qs.some(q=>q.subject)) {
+        setActiveNavSubj(qs[rd.cur||0]?.subject || qs.find(q=>q.subject)?.subject)
       } else { setActiveNavSubj(null) }
       setCbtOn(true)
       setCbtLoading(false)
@@ -775,9 +775,20 @@ export default function Karle() {
   }
 
   const isBitsatTest = isBITSAT(cfg.subject||'')
+  // Build subjGroups for ALL exams with subjects, not just BITSAT
   const subjGroups={}
-  if(isBitsatTest){Qs.forEach((q2,i)=>{const s=q2.subject||'Other';if(!subjGroups[s])subjGroups[s]=[];subjGroups[s].push(i)})}
-  const navSubjects=isBitsatTest?BITSAT_SUBJECTS.filter(s=>subjGroups[s]?.length>0):[]
+  Qs.forEach((q2,i)=>{
+    const s=q2.subject||'Other'
+    if(!subjGroups[s])subjGroups[s]=[]
+    subjGroups[s].push(i)
+  })
+  // Show subject tabs for any exam with 2+ subjects
+  const uniqueSubjects=[...new Set(Qs.map(q=>q.subject).filter(Boolean))]
+  const navSubjects = uniqueSubjects.length > 1
+    ? (isBitsatTest
+        ? BITSAT_SUBJECTS.filter(s=>subjGroups[s]?.length>0)
+        : uniqueSubjects.filter(s=>subjGroups[s]?.length>0))
+    : []
 
   // Bonus vars
   const mainIndices  = Qs.map((_,i)=>i).filter(i=>!Qs[i]?.isBonus)
@@ -976,7 +987,7 @@ export default function Karle() {
             </div>
           </div>
 
-          {isBitsatTest&&navSubjects.length>0&&(
+          {navSubjects.length>0&&(
             <div className="subj-tabs">
               {navSubjects.map(s=>{
                 const sc=getSubjColor(s),indices=subjGroups[s]||[],answered=indices.filter(i=>ans[i]&&ans[i]!=='skip').length,isActive=activeNavSubj===s&&!inBonus
@@ -1091,7 +1102,7 @@ export default function Karle() {
                 <div className="sb-stat"><span className="sb-stat-n red">{stats.s}</span><span className="sb-stat-l">Marked</span></div>
                 <div className="sb-stat"><span className="sb-stat-n gray">{stats.r}</span><span className="sb-stat-l">Remaining</span></div>
               </div>
-              {isBitsatTest?(
+              {navSubjects.length>0?(
                 <div className="sb-sections">
                   {navSubjects.map(s=>{
                     const sc=getSubjColor(s),indices=subjGroups[s]||[],isAct=activeNavSubj===s&&!inBonus

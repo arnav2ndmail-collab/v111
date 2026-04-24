@@ -1,0 +1,2090 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Karle — Test Builder</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root{--bg:#0c0e14;--s1:#13161e;--s2:#1a1e2a;--border:#252936;--acc:#6ee7b7;--acc2:#3b82f6;--warn:#f59e0b;--vline:#a78bfa;--danger:#f87171;--text:#e2e8f0;--muted:#64748b}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow:hidden}
+::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+/* STEP BAR */
+.step-bar{background:var(--s1);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;height:52px;gap:0;flex-shrink:0}
+.logo{font-size:1rem;font-weight:700;color:white;margin-right:28px;flex-shrink:0}.logo span{color:var(--acc)}
+.step{display:flex;align-items:center;gap:7px;padding:0 14px;height:100%;font-size:.75rem;font-weight:500;color:var(--muted);position:relative;cursor:default;transition:color .2s;white-space:nowrap}
+.step.active{color:var(--acc)}.step.done{color:var(--text);cursor:pointer}
+.step-n{width:20px;height:20px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:.62rem;font-weight:700;font-family:'DM Mono',monospace;flex-shrink:0;transition:all .2s}
+.step.active .step-n{background:var(--acc);color:#0c0e14}.step.done .step-n{background:transparent;color:var(--acc);border:1.5px solid var(--acc)}
+.step::after{content:'›';position:absolute;right:0;color:var(--border);font-size:1.1rem}.step:last-child::after{display:none}
+.page{display:none;height:calc(100vh - 52px);overflow:hidden}.page.active{display:flex;flex-direction:column}
+
+/* UPLOAD */
+.upload-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:32px 20px;overflow-y:auto}
+.upload-card{background:var(--s1);border:1px solid var(--border);border-radius:18px;padding:36px;max-width:620px;width:100%}
+.card-title{font-size:1.2rem;font-weight:700;margin-bottom:6px}
+.card-sub{font-size:.82rem;color:var(--muted);margin-bottom:24px;line-height:1.6}
+.drop-zone{background:var(--s2);border:2px dashed var(--border);border-radius:12px;padding:28px 20px;cursor:pointer;transition:all .2s;margin-bottom:20px;text-align:center}
+.drop-zone:hover,.drop-zone.drag{border-color:var(--acc);background:rgba(110,231,183,.04)}
+.drop-zone.loaded{border-color:var(--acc);border-style:solid}
+.drop-title{font-weight:600;margin-bottom:4px;font-size:.9rem}
+.drop-sub{font-size:.76rem;color:var(--muted);margin-bottom:14px}
+.sect-label{font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px}
+.exam-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px}
+.exam-card{background:var(--s2);border:2px solid var(--border);border-radius:10px;padding:12px 14px;cursor:pointer;transition:all .15s;position:relative}
+.exam-card:hover{border-color:var(--acc)}.exam-card.sel{border-color:var(--acc);background:rgba(110,231,183,.05)}
+.exam-name{font-weight:700;font-size:.84rem;margin-bottom:3px}.exam-card.sel .exam-name{color:var(--acc)}
+.exam-meta{font-size:.67rem;color:var(--muted);font-family:'DM Mono',monospace;line-height:1.5}
+.exam-edit-btn{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:5px;background:var(--border);border:none;color:var(--muted);font-size:.65rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;opacity:0}
+.exam-card:hover .exam-edit-btn{opacity:1}.exam-edit-btn:hover{background:var(--acc);color:#0c0e14}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 20px;border-radius:8px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:.82rem;cursor:pointer;transition:all .15s;border:none}
+.btn-acc{background:var(--acc);color:#0c0e14}.btn-acc:hover{background:#4ade80}
+.btn-out{background:transparent;border:1.5px solid var(--border);color:var(--text)}.btn-out:hover{border-color:var(--acc);color:var(--acc)}
+.btn-blue{background:var(--acc2);color:white}.btn-blue:hover{background:#2563eb}
+.btn-warn{background:var(--warn);color:#0c0e14}.btn-warn:hover{filter:brightness(1.1)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.title-input{width:100%;background:var(--s2);border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.86rem;outline:none;transition:border-color .15s;margin-bottom:16px}
+.title-input:focus{border-color:var(--acc)}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+.modal-overlay.hidden{display:none}
+.modal{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:28px;max-width:540px;width:100%;max-height:90vh;overflow-y:auto}
+.modal-title{font-size:1rem;font-weight:700;margin-bottom:4px}
+.modal-sub{font-size:.78rem;color:var(--muted);margin-bottom:20px;line-height:1.5}
+.modal-field{margin-bottom:14px}
+.modal-label{font-size:.7rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;display:block}
+.modal-input{width:100%;background:var(--s2);border:1.5px solid var(--border);border-radius:7px;padding:8px 11px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.84rem;outline:none;transition:border-color .15s}
+.modal-input:focus{border-color:var(--acc)}
+.modal-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modal-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+.subj-row{display:grid;grid-template-columns:1fr 80px 80px 80px 28px;gap:6px;align-items:center;margin-bottom:8px}
+.subj-row-hdr{display:grid;grid-template-columns:1fr 80px 80px 80px 28px;gap:6px;margin-bottom:6px}
+.subj-hdr-lbl{font-size:.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.remove-subj{width:28px;height:28px;border-radius:6px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.2);color:var(--danger);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.75rem;transition:all .15s}
+.remove-subj:hover{background:rgba(248,113,113,.2)}
+.add-subj-btn{display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:7px;background:rgba(110,231,183,.07);border:1.5px dashed rgba(110,231,183,.3);color:var(--acc);font-size:.76rem;font-weight:600;cursor:pointer;transition:all .15s;margin-top:4px}
+.add-subj-btn:hover{background:rgba(110,231,183,.12)}
+
+/* ADV SECTION CONFIG */
+.adv-section-wrap{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px}
+.adv-section-title{font-size:.78rem;font-weight:700;margin-bottom:10px;color:var(--acc)}
+
+/* CROPPER SHELL */
+.cropper-shell{display:flex;flex:1;overflow:hidden;height:calc(100vh - 52px)}
+
+/* ── LEFT: PDF VIEWER ── */
+.pdf-side{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#111;min-width:0}
+.pdf-toolbar{background:var(--s1);border-bottom:1px solid var(--border);padding:7px 12px;display:flex;align-items:center;gap:6px;flex-shrink:0;flex-wrap:wrap}
+.mode-toggle{display:flex;background:var(--s2);border:1px solid var(--border);border-radius:8px;overflow:hidden;flex-shrink:0}
+.mode-btn{padding:5px 10px;font-size:.7rem;font-weight:600;cursor:pointer;color:var(--muted);background:transparent;border:none;font-family:'DM Sans',sans-serif;transition:all .15s;white-space:nowrap}
+.mode-btn.on{background:var(--acc);color:#0c0e14}
+.mode-btn.on-vline{background:var(--vline);color:#0c0e14}
+.mode-btn.on-move{background:var(--acc2);color:white}
+.iBtn{width:28px;height:28px;border-radius:6px;background:var(--s2);border:1px solid var(--border);color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.82rem;transition:all .15s;flex-shrink:0}
+.iBtn:hover{color:var(--acc);border-color:var(--acc)}
+.iBtn.active{background:var(--warn);color:#0c0e14;border-color:var(--warn)}
+.zoom-label{font-size:.7rem;color:var(--muted);font-family:'DM Mono',monospace;min-width:38px;text-align:center}
+.undo-btn{padding:5px 10px;font-size:.7rem;font-weight:600;cursor:pointer;color:var(--warn);background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:6px;font-family:'DM Sans',sans-serif;transition:all .15s;display:flex;align-items:center;gap:4px}
+.undo-btn:hover{background:rgba(245,158,11,.15)}
+.undo-btn:disabled{opacity:.3;cursor:not-allowed}
+
+/* PDF SCROLL CONTAINER */
+.pdf-scroll{flex:1;overflow:auto;position:relative;user-select:none}
+.pdf-pages-wrap{display:flex;flex-direction:column;align-items:center;padding:20px;gap:16px;min-height:100%}
+.pdf-page-container{position:relative;flex-shrink:0}
+.pdf-page-canvas{display:block;box-shadow:0 4px 24px rgba(0,0,0,.6);border-radius:3px}
+.page-label{position:absolute;top:-22px;left:0;font-size:.65rem;color:var(--muted);font-family:'DM Mono',monospace;background:var(--s2);padding:2px 7px;border-radius:4px}
+
+/* CROP OVERLAYS */
+.crop-sel-box{position:absolute;border:2.5px solid var(--acc);background:rgba(110,231,183,.07);pointer-events:none;border-radius:2px;z-index:10}
+.crop-sel-box .ch{position:absolute;width:9px;height:9px;background:var(--acc);border-radius:50%}
+.crop-sel-box .ch.tl{top:-4px;left:-4px}.crop-sel-box .ch.tr{top:-4px;right:-4px}
+.crop-sel-box .ch.bl{bottom:-4px;left:-4px}.crop-sel-box .ch.br{bottom:-4px;right:-4px}
+.cropped-overlay{position:absolute;pointer-events:auto;background:rgba(0,0,0,.45);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:5;border:2px solid rgba(110,231,183,.25);border-radius:2px}
+.cropped-overlay:hover{border-color:var(--acc)}
+.cropped-label{background:rgba(110,231,183,.15);border:1px solid var(--acc);color:var(--acc);font-size:.65rem;font-weight:700;font-family:'DM Mono',monospace;padding:3px 8px;border-radius:4px;pointer-events:none;user-select:none}
+/* Resize handles on cropped overlays */
+.rh{position:absolute;width:10px;height:10px;background:var(--acc);border:2px solid #0c0e14;border-radius:2px;z-index:8;opacity:0;transition:opacity .15s}
+.cropped-overlay:hover .rh{opacity:1}
+.rh.tl{top:-5px;left:-5px;cursor:nw-resize}
+.rh.tc{top:-5px;left:calc(50% - 5px);cursor:n-resize}
+.rh.tr{top:-5px;right:-5px;cursor:ne-resize}
+.rh.ml{top:calc(50% - 5px);left:-5px;cursor:w-resize}
+.rh.mr{top:calc(50% - 5px);right:-5px;cursor:e-resize}
+.rh.bl{bottom:-5px;left:-5px;cursor:sw-resize}
+.rh.bc{bottom:-5px;left:calc(50% - 5px);cursor:s-resize}
+.rh.br{bottom:-5px;right:-5px;cursor:se-resize}
+/* Move cursor for dragging the whole box */
+.cropped-overlay .ov-drag{position:absolute;inset:10px;cursor:move;z-index:6}
+
+/* VERTICAL BOUNDARY LINES */
+.vguide-line{position:absolute;top:0;bottom:0;width:3px;cursor:ew-resize;z-index:25;pointer-events:auto}
+.vguide-line-inner{position:absolute;top:0;bottom:0;width:3px;background:var(--vline);box-shadow:0 0 8px rgba(167,139,250,.6)}
+.vguide-line-handle{position:absolute;top:8px;left:-18px;background:var(--vline);color:#0c0e14;font-size:.58rem;font-weight:700;font-family:'DM Mono',monospace;padding:2px 5px;border-radius:3px;cursor:ew-resize;white-space:nowrap;writing-mode:horizontal-tb}
+.vguide-delete{position:absolute;top:32px;left:-10px;width:20px;height:20px;background:var(--danger);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.65rem;cursor:pointer;opacity:0;transition:opacity .15s}
+.vguide-line:hover .vguide-delete{opacity:1}
+
+/* HORIZONTAL GUIDE LINES */
+.guide-line{position:absolute;height:12px;cursor:ns-resize;z-index:20;pointer-events:auto}
+.guide-line-inner{position:absolute;left:0;right:0;top:5px;height:2px;background:var(--warn);box-shadow:0 0 6px rgba(245,158,11,.5)}
+.guide-line-handle{position:absolute;right:0;top:-2px;background:var(--warn);color:#0c0e14;font-size:.6rem;font-weight:700;font-family:'DM Mono',monospace;padding:2px 6px;border-radius:3px;cursor:ns-resize;white-space:nowrap}
+.guide-line-delete{position:absolute;left:0;top:-2px;width:18px;height:18px;background:var(--danger);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.65rem;cursor:pointer;opacity:0;transition:opacity .15s}
+.guide-line:hover .guide-line-delete{opacity:1}
+
+/* TRAP ZONES */
+.trap-zone{position:absolute;background:rgba(245,158,11,.05);border-left:3px solid rgba(245,158,11,.3);display:flex;align-items:center;justify-content:flex-end;padding-right:8px;z-index:4}
+.trap-zone-label{font-size:.65rem;color:var(--warn);font-family:'DM Mono',monospace;font-weight:700}
+
+/* COLUMN ZONES (between vertical lines) */
+.col-zone{position:absolute;background:rgba(167,139,250,.03);border-top:2px dashed rgba(167,139,250,.2);z-index:3;pointer-events:none}
+.col-zone-label{position:absolute;top:4px;left:6px;font-size:.6rem;color:var(--vline);font-family:'DM Mono',monospace;font-weight:700;opacity:.7}
+
+/* Q PANEL */
+.q-panel{width:300px;flex-shrink:0;background:var(--s1);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.qp-hdr{padding:12px 14px 8px;border-bottom:1px solid var(--border);flex-shrink:0}
+.qp-title{font-weight:700;font-size:.9rem;margin-bottom:2px}
+.qp-sub{font-size:.7rem;color:var(--muted)}
+.subj-tabs{display:flex;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;flex-shrink:0}
+.subj-tabs::-webkit-scrollbar{display:none}
+.stab{padding:7px 12px;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s;flex-shrink:0}
+.stab:hover{color:var(--text)}.stab.on{color:var(--acc);border-bottom-color:var(--acc)}
+.q-list{flex:1;overflow-y:auto;padding:8px}
+.qi{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:8px;cursor:pointer;transition:background .12s;margin-bottom:2px}
+.qi:hover{background:var(--s2)}.qi.active{background:rgba(110,231,183,.07);border:1px solid rgba(110,231,183,.15)}.qi.done{opacity:.7}
+.qi-dot{width:26px;height:26px;border-radius:6px;background:var(--s2);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:.6rem;font-weight:700;color:var(--muted);flex-shrink:0;transition:all .15s}
+.qi.active .qi-dot{border-color:var(--acc);color:var(--acc)}.qi.done .qi-dot{background:var(--acc);color:#0c0e14;border-color:var(--acc)}
+.qi-info{flex:1;min-width:0}.qi-name{font-size:.76rem;font-weight:600}.qi-sub{font-size:.63rem;color:var(--muted)}
+.qi-thumb{width:40px;height:24px;border-radius:4px;overflow:hidden;flex-shrink:0;background:var(--s2);border:1px solid var(--border)}
+.qi-thumb img{width:100%;height:100%;object-fit:cover}
+.q-footer{padding:10px 12px;border-top:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;gap:7px}
+.progress-bar{height:3px;background:var(--border);border-radius:99px;overflow:hidden}
+.progress-fill{height:100%;background:var(--acc);border-radius:99px;transition:width .3s}
+.progress-lbl{font-size:.66rem;color:var(--muted);font-family:'DM Mono',monospace}
+.instructions{font-size:.71rem;color:var(--muted);line-height:1.6;background:var(--s2);border-radius:7px;padding:7px 9px}
+
+/* ANS KEY */
+.anskey-wrap{flex:1;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:28px 20px}
+.anskey-card{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:28px;max-width:720px;width:100%}
+.ak-title{font-size:1.1rem;font-weight:700;margin-bottom:4px}
+.ak-sub{font-size:.82rem;color:var(--muted);margin-bottom:20px;line-height:1.6}
+.sect-lbl{font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px}
+.prompt-box{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;font-family:'DM Mono',monospace;font-size:.72rem;line-height:1.7;color:var(--acc);margin-bottom:14px;position:relative;max-height:180px;overflow-y:auto;white-space:pre-wrap;word-break:break-all}
+.copy-btn{position:sticky;top:0;float:right;background:var(--acc);color:#0c0e14;border:none;padding:3px 9px;border-radius:5px;font-size:.67rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif}
+.json-ta{width:100%;background:var(--s2);border:1.5px solid var(--border);border-radius:10px;padding:12px;color:var(--text);font-family:'DM Mono',monospace;font-size:.76rem;min-height:120px;outline:none;resize:vertical;transition:border-color .15s;margin-bottom:10px}
+.json-ta:focus{border-color:var(--acc)}.json-ta::placeholder{color:var(--muted)}
+.vm{font-size:.74rem;padding:6px 10px;border-radius:6px;margin-bottom:10px;display:none}
+.vm.ok{background:rgba(110,231,183,.1);color:var(--acc);border:1px solid rgba(110,231,183,.2);display:block}
+.vm.err{background:rgba(248,113,113,.1);color:var(--danger);border:1px solid rgba(248,113,113,.2);display:block}
+.ak-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:5px;max-height:240px;overflow-y:auto}
+.aki{background:var(--s2);border:1.5px solid var(--border);border-radius:7px;padding:5px 8px;display:flex;align-items:center;justify-content:space-between;font-size:.7rem}
+.aki .qn{font-family:'DM Mono',monospace;color:var(--muted)}.aki .ans{font-family:'DM Mono',monospace;font-weight:700;color:var(--acc)}
+.aki.miss .ans{color:var(--danger)}
+
+/* EXPORT */
+.export-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:32px 20px;overflow-y:auto}
+.export-card{background:var(--s1);border:1px solid var(--border);border-radius:18px;padding:36px;max-width:520px;width:100%;text-align:center}
+.exp-icon{font-size:3rem;margin-bottom:14px}
+.exp-title{font-size:1.3rem;font-weight:700;margin-bottom:6px}
+.exp-sub{font-size:.84rem;color:var(--muted);margin-bottom:24px;line-height:1.7}
+.exp-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:24px}
+.stat-box{background:var(--s2);border-radius:9px;padding:12px}
+.stat-n{font-family:'DM Mono',monospace;font-size:1.4rem;font-weight:700;color:var(--acc);margin-bottom:3px}
+.stat-l{font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.exp-btns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:16px}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--s1);border:1px solid var(--border);border-radius:9px;padding:10px 16px;font-size:.82rem;font-weight:500;z-index:9999;transform:translateY(60px);opacity:0;transition:all .3s;max-width:300px}
+.toast.show{transform:translateY(0);opacity:1}.toast.ok{border-color:rgba(110,231,183,.3);color:var(--acc)}.toast.err{border-color:rgba(248,113,113,.3);color:var(--danger)}.toast.info{border-color:rgba(167,139,250,.3);color:var(--vline)}
+
+/* ADV PAPER TABS */
+.paper-tabs{display:flex;gap:6px;margin-bottom:16px}
+.paper-tab{padding:6px 14px;border-radius:7px;border:1.5px solid var(--border);font-size:.76rem;font-weight:600;cursor:pointer;transition:all .15s;color:var(--muted)}
+.paper-tab.on{border-color:var(--acc);color:var(--acc);background:rgba(110,231,183,.06)}
+
+/* PREVIEW MODAL */
+.preview-modal{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px)}
+.preview-modal.hidden{display:none}
+.preview-inner{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:16px;max-width:90vw;max-height:90vh;display:flex;flex-direction:column;gap:12px}
+.preview-hdr{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.preview-title{font-size:.9rem;font-weight:700}
+.preview-nav{display:flex;gap:6px}
+.preview-img{max-width:100%;max-height:70vh;border-radius:6px;border:1px solid var(--border);display:block}
+.preview-close{width:28px;height:28px;border-radius:6px;background:var(--s2);border:1px solid var(--border);color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.9rem}
+.preview-close:hover{color:var(--danger);border-color:var(--danger)}
+
+/* DRAG REORDER */
+.qi.dragging{opacity:.4;border:2px dashed var(--acc)}
+.qi.drag-over{border-top:3px solid var(--acc)}
+.qi{position:relative;cursor:grab}
+.qi:active{cursor:grabbing}
+.qi-drag-handle{position:absolute;left:0;top:0;bottom:0;width:6px;background:transparent;border-radius:4px 0 0 4px;cursor:grab;transition:background .15s}
+.qi:hover .qi-drag-handle{background:var(--border)}
+
+/* BULK CROP STATUS */
+.bulk-bar{background:var(--s2);border-radius:7px;padding:6px 10px;font-size:.72rem;color:var(--acc);font-family:'DM Mono',monospace;display:none}
+.bulk-bar.show{display:block}
+
+/* EDIT Q MODAL extras */
+.section-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:4px;font-size:.65rem;font-weight:700;font-family:'DM Mono',monospace;background:rgba(245,158,11,.1);color:var(--warn);border:1px solid rgba(245,158,11,.2);margin-left:6px}
+
+/* QUALITY FLAGS */
+.qi.warn-crop .qi-dot{background:rgba(245,158,11,.15);border-color:var(--warn);color:var(--warn)}
+.qi.warn-crop::after{content:'⚠';position:absolute;top:4px;right:4px;font-size:.6rem;color:var(--warn)}
+.crop-warn-badge{position:absolute;top:4px;right:4px;background:var(--warn);color:#0c0e14;font-size:.55rem;font-weight:700;padding:2px 5px;border-radius:3px;z-index:6}
+
+/* MULTI-PAGE Q LINK */
+.qi.multi-page .qi-dot{border-color:var(--acc2);color:var(--acc2)}
+.link-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:4px;font-size:.62rem;font-weight:700;font-family:'DM Mono',monospace;background:rgba(59,130,246,.12);color:var(--acc2);border:1px solid rgba(59,130,246,.2);margin-left:4px}
+
+/* KEYBOARD HINT OVERLAY */
+.kb-hint{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:10px 16px;font-size:.7rem;font-family:'DM Mono',monospace;color:var(--muted);z-index:500;pointer-events:none;opacity:0;transition:opacity .3s;white-space:nowrap}
+.kb-hint.show{opacity:1}
+.kb-key{display:inline-flex;align-items:center;justify-content:center;background:var(--s2);border:1px solid var(--border);border-radius:4px;padding:1px 6px;margin:0 2px;color:var(--text);font-size:.65rem}
+
+/* SESSION SAVE/RESTORE */
+.session-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:6px;border:1.5px solid var(--border);font-size:.7rem;font-weight:600;cursor:pointer;transition:all .15s;color:var(--muted);background:transparent}
+.session-pill:hover{border-color:var(--acc2);color:var(--acc2)}
+
+/* ANSWER KEY PDF DROPZONE */
+.ak-drop{background:var(--s2);border:2px dashed var(--border);border-radius:10px;padding:16px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:12px}
+.ak-drop:hover,.ak-drop.drag{border-color:var(--acc);background:rgba(110,231,183,.04)}
+.ak-drop.loaded{border-color:var(--acc);border-style:solid}
+</style>
+</head>
+<body>
+
+<div class="step-bar">
+  <div class="logo">Kar<span>le</span> <span style="color:var(--muted);font-weight:400;font-size:.72rem;margin-left:4px">Test Builder</span></div>
+  <div class="step done" id="step1" onclick="goStep(1)"><div class="step-n">1</div>Upload PDF</div>
+  <div class="step" id="step2"><div class="step-n">2</div>Crop Questions</div>
+  <div class="step" id="step3"><div class="step-n">3</div>Answer Key</div>
+  <div class="step" id="step4"><div class="step-n">4</div>Export</div>
+</div>
+
+<!-- PAGE 1 -->
+<div class="page active" id="page1">
+  <div class="upload-wrap">
+    <div class="upload-card">
+      <div class="card-title">Build a Test Paper</div>
+      <div class="card-sub">Upload your question paper PDF, select the exam, then visually crop each question.</div>
+      <div class="drop-zone" id="dropzone" onclick="document.getElementById('pdfInput').click()">
+        <div class="drop-title" id="dropTitle">Drop question paper PDF here</div>
+        <div class="drop-sub" id="dropSub">or click to browse · supports any PDF</div>
+        <button class="btn btn-out" onclick="event.stopPropagation();document.getElementById('pdfInput').click()">Browse PDF</button>
+      </div>
+      <input type="file" id="pdfInput" accept=".pdf" style="display:none"/>
+      <div class="sect-label">Select Exam Pattern</div>
+      <div class="exam-grid" id="examGrid"></div>
+      <div class="sect-label">Test Title</div>
+      <input class="title-input" id="testTitle" placeholder="e.g. BITSAT Mock Test 1"/>
+      <button class="btn btn-acc" style="width:100%;justify-content:center;font-size:.88rem;padding:12px" onclick="startCropping()">Start Cropping →</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 2: CROPPER -->
+<div class="page" id="page2">
+  <div class="cropper-shell">
+    <div class="pdf-side">
+      <div class="pdf-toolbar">
+        <div class="mode-toggle">
+          <button class="mode-btn on" id="modeBox" onclick="setMode('box')">✂ Box</button>
+          <button class="mode-btn" id="modeVLine" onclick="setMode('vline')">⇕ Boundary</button>
+          <button class="mode-btn" id="modeLine" onclick="setMode('line')">━ H-Lines</button>
+          <button class="mode-btn" id="modeMove" onclick="setMode('move')">✥ Move</button>
+        </div>
+        <button class="undo-btn" id="undoBtn" onclick="doUndo()" disabled>↩ Undo</button>
+        <div style="flex:1;font-size:.72rem;color:var(--muted);padding:0 4px;min-width:60px" id="toolHint">Drag to crop</div>
+        <button class="iBtn" onclick="changeZoom(-0.25)" title="Zoom out">−</button>
+        <span class="zoom-label" id="zoomLabel">100%</span>
+        <button class="iBtn" onclick="changeZoom(0.25)" title="Zoom in">+</button>
+        <button class="iBtn" title="Fit width" onclick="fitZoom()">⤢</button>
+        <span style="font-size:.7rem;color:var(--muted);font-family:'DM Mono',monospace;margin-left:2px" id="pageCounter">— pages</span>
+        <div style="width:1px;height:20px;background:var(--border);margin:0 4px;flex-shrink:0"></div>
+        <button class="iBtn" title="Clone V+H lines to all pages" onclick="cloneLinesToAllPages()" style="width:auto;padding:0 8px;font-size:.68rem;font-weight:600;color:var(--vline);border-color:rgba(167,139,250,.3)">⧉ Clone Grid</button>
+        <button class="iBtn" title="Auto-crop all zones in order" onclick="openBulkCrop()" style="width:auto;padding:0 8px;font-size:.68rem;font-weight:600;color:var(--warn);border-color:rgba(245,158,11,.3)">⚡ Bulk Crop</button>
+        <div style="width:1px;height:20px;background:var(--border);margin:0 4px;flex-shrink:0"></div>
+        <button class="session-pill" onclick="saveSession()" title="Save session to file">💾 Save</button>
+        <button class="session-pill" onclick="document.getElementById('sessionInput').click()" title="Restore session">📂 Restore</button>
+        <input type="file" id="sessionInput" accept=".karle.json" style="display:none" onchange="loadSession(event)"/>
+        <button class="iBtn" onclick="runQualityCheck()" title="Check crop quality" style="width:auto;padding:0 8px;font-size:.68rem;font-weight:600;color:#38bdf8;border-color:rgba(56,189,248,.3)">🔍 QC</button>
+        <button class="session-pill" onclick="showKbHelp()" title="Keyboard shortcuts" style="color:var(--muted)">? Keys</button>
+      </div>
+      <div class="pdf-scroll" id="pdfScroll">
+        <div class="pdf-pages-wrap" id="pagesWrap"></div>
+      </div>
+    </div>
+
+    <div class="q-panel">
+      <div class="qp-hdr">
+        <div class="qp-title" id="qpTitle">Question Paper</div>
+        <div class="qp-sub" id="qpSub">Select a question, then crop it</div>
+      </div>
+      <div class="subj-tabs" id="subjTabs"></div>
+      <div class="q-list" id="qList"></div>
+      <div class="q-footer">
+        <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+        <div class="progress-lbl" id="progressLbl">0 of 0 cropped</div>
+        <div class="instructions" id="instructions">Select a question then drag to crop</div>
+        <div class="bulk-bar" id="bulkBar"></div>
+        <button class="btn btn-out" style="justify-content:center;font-size:.74rem;padding:6px" onclick="openMultiPageLink()">🔗 Link Multi-page Q</button>
+        <button class="btn btn-out" style="justify-content:center" onclick="goToAnsKey()">Done → Answer Key</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 3: ANSWER KEY -->
+<div class="page" id="page3">
+  <div class="anskey-wrap">
+    <div class="anskey-card">
+      <div class="ak-title">📋 Answer Key</div>
+      <div class="ak-sub">Use the AI prompt below with your answer key PDF. Paste the AI's JSON response below.</div>
+      <div class="sect-lbl">Option A — Drop your answer key PDF for auto-extraction</div>
+      <div class="ak-drop" id="akDrop" onclick="document.getElementById('akPdfInput').click()">
+        <div style="font-size:.84rem;font-weight:600;margin-bottom:4px" id="akDropTitle">Drop Answer Key PDF here</div>
+        <div style="font-size:.72rem;color:var(--muted)">Extracts answers automatically from text layer</div>
+      </div>
+      <input type="file" id="akPdfInput" accept=".pdf" style="display:none" onchange="extractAnswersFromPDF(event)"/>
+      <div style="text-align:center;font-size:.72rem;color:var(--muted);margin-bottom:10px">— or —</div>
+      <div class="sect-lbl">Option B — Copy prompt → give to ChatGPT/Claude with answer key PDF</div>
+      <div class="prompt-box" id="aiPrompt"><button class="copy-btn" onclick="copyPrompt()">Copy</button></div>
+      <div class="sect-lbl" style="margin-top:14px">Step 2 — Paste AI's JSON response here</div>
+      <textarea class="json-ta" id="ankInput" placeholder='{"1": "A", "2": "B", "3": "C", ...}' oninput="validateAnsKey()"></textarea>
+      <div class="vm" id="validMsg"></div>
+      <div class="ak-grid" id="ankPreview"></div>
+      <div style="display:flex;gap:8px;margin-top:18px">
+        <button class="btn btn-out" onclick="goStep(2)">← Back</button>
+        <button class="btn btn-acc" style="flex:1;justify-content:center" onclick="goToExport()">Generate & Export →</button>
+        <button class="btn btn-out" onclick="goToExport()">Skip</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 4: EXPORT -->
+<div class="page" id="page4">
+  <div class="export-wrap">
+    <div class="export-card">
+      <div class="exp-icon">🎉</div>
+      <div class="exp-title">Test Ready!</div>
+      <div class="exp-sub">Your test is packaged and ready to upload to Karle's Supabase Storage.</div>
+      <div class="exp-stats" id="expStats"></div>
+      <div class="exp-btns">
+        <button class="btn btn-acc" style="font-size:.88rem;padding:11px 26px" onclick="dlJSON()">⬇ Download JSON</button>
+        <button class="btn btn-blue" style="font-size:.88rem;padding:11px 26px" onclick="dlZIP()">📦 Download ZIP</button>
+      </div>
+      <div style="font-size:.74rem;color:var(--muted);line-height:1.8">
+        Upload the <strong style="color:var(--text)">JSON file</strong> to:<br>
+        Supabase → Storage → <code style="color:var(--acc)">tests/[ExamName]/</code>
+      </div>
+      <button class="btn btn-out" style="margin-top:14px;width:100%;justify-content:center" onclick="startOver()">← Build Another Test</button>
+    </div>
+  </div>
+</div>
+
+<!-- PREVIEW MODAL -->
+<div class="preview-modal hidden" id="previewModal">
+  <div class="preview-inner">
+    <div class="preview-hdr">
+      <div class="preview-title" id="previewTitle">Preview</div>
+      <div class="preview-nav">
+        <button class="iBtn" onclick="previewNav(-1)" title="Previous">‹</button>
+        <button class="iBtn" onclick="previewNav(1)" title="Next">›</button>
+      </div>
+      <button class="preview-close" onclick="closePreview()">✕</button>
+    </div>
+    <img class="preview-img" id="previewImg" src="" alt=""/>
+  </div>
+</div>
+
+<!-- BULK CROP MODAL -->
+<div class="modal-overlay hidden" id="bulkModal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-title">⚡ Bulk Zone Crop</div>
+    <div class="modal-sub">Assigns each horizontal zone (in the selected column) to questions in order, starting from the active question.</div>
+    <div id="bulkPreview" style="background:var(--s2);border-radius:8px;padding:10px;font-size:.74rem;font-family:'DM Mono',monospace;line-height:1.8;max-height:200px;overflow-y:auto;margin-bottom:14px;color:var(--text)"></div>
+    <div class="modal-btns">
+      <button class="btn btn-out" onclick="document.getElementById('bulkModal').classList.add('hidden')">Cancel</button>
+      <button class="btn btn-warn" onclick="executeBulkCrop()">Assign All →</button>
+    </div>
+  </div>
+</div>
+
+<!-- EXAM EDIT MODAL -->
+<div class="modal-overlay hidden" id="examEditModal">
+  <div class="modal">
+    <div class="modal-title" id="editModalTitle">Edit Exam Config</div>
+    <div class="modal-sub" id="editModalSub">Customize the exam pattern, marking scheme, and subjects.</div>
+    <div id="examEditBody"></div>
+    <div class="modal-btns">
+      <button class="btn btn-out" onclick="closeExamEdit()">Cancel</button>
+      <button class="btn btn-acc" onclick="saveExamEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- CUSTOM EXAM SETUP MODAL -->
+<div class="modal-overlay hidden" id="customSetupModal">
+  <div class="modal">
+    <div class="modal-title">Custom Exam Setup</div>
+    <div class="modal-sub">Define your subjects, question counts, and marking scheme.</div>
+    <div class="modal-field">
+      <label class="modal-label">Exam Label</label>
+      <input class="modal-input" id="customLabel" placeholder="e.g. My College Exam"/>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label class="modal-label">Duration (min)</label>
+        <input class="modal-input" id="customDur" type="number" value="180" min="10"/>
+      </div>
+    </div>
+    <div class="modal-field" style="margin-top:4px">
+      <label class="modal-label">Subjects</label>
+      <div class="subj-row-hdr">
+        <div class="subj-hdr-lbl">Subject Name</div>
+        <div class="subj-hdr-lbl">Questions</div>
+        <div class="subj-hdr-lbl">+Marks</div>
+        <div class="subj-hdr-lbl">−Marks</div>
+        <div></div>
+      </div>
+      <div id="customSubjRows"></div>
+      <button class="add-subj-btn" onclick="addCustomSubjRow()">+ Add Subject</button>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-out" onclick="document.getElementById('customSetupModal').classList.add('hidden')">Cancel</button>
+      <button class="btn btn-acc" onclick="saveCustomSetup()">Create Exam</button>
+    </div>
+  </div>
+</div>
+
+<!-- JEE ADV CONFIG MODAL -->
+<div class="modal-overlay hidden" id="advSetupModal">
+  <div class="modal">
+    <div class="modal-title">JEE Advanced Setup</div>
+    <div class="modal-sub">Configure paper and sections per subject.</div>
+    <div class="modal-field">
+      <label class="modal-label">Which Paper?</label>
+      <div class="paper-tabs" id="advPaperTabs">
+        <div class="paper-tab on" data-p="1" onclick="selectAdvPaper(1)">Paper 1</div>
+        <div class="paper-tab" data-p="2" onclick="selectAdvPaper(2)">Paper 2</div>
+      </div>
+    </div>
+    <div id="advSectionBody"></div>
+    <div class="modal-btns">
+      <button class="btn btn-out" onclick="document.getElementById('advSetupModal').classList.add('hidden')">Cancel</button>
+      <button class="btn btn-acc" onclick="saveAdvSetup()">Apply</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// ── EXAM CONFIGS ──────────────────────────────────────────────────────────
+const EXAMS_DEFAULT={
+  NEET:{label:'NEET',dur:200,subjects:[
+    {name:'Physics',count:50,mCor:4,mNeg:1},
+    {name:'Chemistry',count:50,mCor:4,mNeg:1},
+    {name:'Biology',count:100,mCor:4,mNeg:1}
+  ],meta:'200 Qs · +4/−1 · 200 min'},
+  IAT:{label:'IAT (IISER)',dur:180,subjects:[
+    {name:'Biology',count:15,mCor:4,mNeg:1},
+    {name:'Chemistry',count:15,mCor:4,mNeg:1},
+    {name:'Maths',count:15,mCor:4,mNeg:1},
+    {name:'Physics',count:15,mCor:4,mNeg:1}
+  ],meta:'60 Qs · +4/−1 · 180 min'},
+  MHT_CET:{label:'MHT-CET',dur:180,subjects:[
+    {name:'Physics',count:50,mCor:2,mNeg:0},
+    {name:'Chemistry',count:50,mCor:2,mNeg:0},
+    {name:'Maths',count:50,mCor:2,mNeg:0}
+  ],meta:'150 Qs · +2/0 · 180 min'},
+  CUET:{label:'CUET',dur:45,subjects:[
+    {name:'General',count:50,mCor:5,mNeg:1}
+  ],meta:'50 Qs · +5/−1 · 45 min'},
+  BITSAT:{label:'BITSAT',dur:180,subjects:[
+    {name:'Physics',count:30,mCor:3,mNeg:1},
+    {name:'Chemistry',count:30,mCor:3,mNeg:1},
+    {name:'Maths',count:39,mCor:3,mNeg:1},
+    {name:'English & LR',count:31,mCor:3,mNeg:1},
+    {name:'Bonus',count:12,mCor:3,mNeg:0}
+  ],meta:'130+12 Qs · +3/−1 · 180 min'},
+  JEE_MAIN:{label:'JEE Main',dur:180,subjects:[
+    {name:'Physics',count:25,mCor:4,mNeg:1},
+    {name:'Chemistry',count:25,mCor:4,mNeg:1},
+    {name:'Maths',count:25,mCor:4,mNeg:1}
+  ],meta:'75 Qs · +4/−1 · 180 min'},
+  JEE_ADV:{label:'JEE Advanced',dur:180,paper:1,subjects:[
+    {name:'Physics',sections:[
+      {name:'Sec A — MCQ',count:6,mCor:3,mNeg:1,type:'MCQ'},
+      {name:'Sec B — MSQ',count:6,mCor:4,mNeg:2,type:'MSQ'},
+      {name:'Sec C — Integer',count:6,mCor:3,mNeg:0,type:'INT'}
+    ]},
+    {name:'Chemistry',sections:[
+      {name:'Sec A — MCQ',count:6,mCor:3,mNeg:1,type:'MCQ'},
+      {name:'Sec B — MSQ',count:6,mCor:4,mNeg:2,type:'MSQ'},
+      {name:'Sec C — Integer',count:6,mCor:3,mNeg:0,type:'INT'}
+    ]},
+    {name:'Maths',sections:[
+      {name:'Sec A — MCQ',count:6,mCor:3,mNeg:1,type:'MCQ'},
+      {name:'Sec B — MSQ',count:6,mCor:4,mNeg:2,type:'MSQ'},
+      {name:'Sec C — Integer',count:6,mCor:3,mNeg:0,type:'INT'}
+    ]}
+  ],meta:'~54 Qs · Varies/Section · 180 min'},
+  UGEE_SUPR:{label:'UGEE — SUPR',dur:60,subjects:[
+    {name:'Physics',count:17,mCor:1,mNeg:0.25},
+    {name:'Chemistry',count:13,mCor:1,mNeg:0.25},
+    {name:'Maths',count:20,mCor:1,mNeg:0.25}
+  ],meta:'50 Qs · +1/−0.25 · 60 min'},
+  UGEE_REAP:{label:'UGEE — REAP',dur:120,subjects:[
+    {name:'Reasoning',count:30,mCor:2,mNeg:0.5},
+    {name:'Aptitude',count:20,mCor:2,mNeg:0.5}
+  ],meta:'50 Qs · +2/−0.5 · 120 min'},
+  COMEDK:{label:'COMEDK',dur:180,subjects:[
+    {name:'Physics',count:60,mCor:1,mNeg:0},
+    {name:'Chemistry',count:60,mCor:1,mNeg:0},
+    {name:'Maths',count:60,mCor:1,mNeg:0}
+  ],meta:'180 Qs · +1/0 · 180 min'},
+  VITEEE:{label:'VITEEE',dur:150,subjects:[
+    {name:'Physics',count:35,mCor:1,mNeg:0},
+    {name:'Chemistry',count:35,mCor:1,mNeg:0},
+    {name:'Maths',count:40,mCor:1,mNeg:0},
+    {name:'Aptitude',count:10,mCor:1,mNeg:0},
+    {name:'English',count:5,mCor:1,mNeg:0}
+  ],meta:'125 Qs · +1/0 · 150 min'},
+  SRMJEEE:{label:'SRMJEEE',dur:150,subjects:[
+    {name:'Physics',count:35,mCor:3,mNeg:1},
+    {name:'Chemistry',count:35,mCor:3,mNeg:1},
+    {name:'Maths',count:35,mCor:3,mNeg:1},
+    {name:'English',count:10,mCor:3,mNeg:1},
+    {name:'Aptitude',count:10,mCor:3,mNeg:1}
+  ],meta:'125 Qs · +3/−1 · 150 min'},
+  CUSTOM:{label:'Custom',dur:180,subjects:[
+    {name:'General',count:50,mCor:1,mNeg:0}
+  ],meta:'Your own pattern',isCustom:true}
+};
+
+// Deep copy to allow editing
+let EXAMS=JSON.parse(JSON.stringify(EXAMS_DEFAULT));
+let editingExamKey=null;
+let advPaperSelected=1;
+
+// ── STATE ─────────────────────────────────────────────────────────────────
+let pdfDoc=null, zoom=1.0, selectedExam='BITSAT';
+let questions=[], activeQ=0, answerKey={};
+let originalPdfBytes=null;
+let renderedPages={};
+let cropMode='box';
+
+// Box crop
+let boxDragging=false, boxStart=null, boxCurrent=null, boxPageNum=null;
+let activeCropBox=null;
+
+// Guide lines (horizontal)
+let guideLines=[];
+// Vertical boundary lines
+let vGuideLines=[];
+
+// Undo stack
+let undoStack=[];
+const MAX_UNDO=30;
+
+// Dragging state for move mode
+let moveDragging=false, moveTarget=null, moveStartPos=null;
+
+// ── UNDO ──────────────────────────────────────────────────────────────────
+function pushUndo(action){
+  undoStack.push(action);
+  if(undoStack.length>MAX_UNDO)undoStack.shift();
+  document.getElementById('undoBtn').disabled=false;
+}
+
+function doUndo(){
+  if(!undoStack.length)return;
+  const action=undoStack.pop();
+  if(action.type==='addHLine'){
+    // Remove the guide line
+    const idx=guideLines.indexOf(action.guide);
+    if(idx!==-1){action.guide.div.remove();guideLines.splice(idx,1);updateTrapZones();toast('Undo: removed H-line','info')}
+  } else if(action.type==='addVLine'){
+    const idx=vGuideLines.indexOf(action.guide);
+    if(idx!==-1){action.guide.div.remove();vGuideLines.splice(idx,1);updateColZones();toast('Undo: removed V-line','info')}
+  } else if(action.type==='crop'){
+    const q=action.q;
+    q.imageData=action.prevImageData;q.cropped=action.prevCropped;
+    q.cropPageNum=action.prevPage;q.cropY1=action.prevY1;q.cropY2=action.prevY2;
+    q.cropX1=action.prevX1;q.cropX2=action.prevX2;
+    renderAllCroppedOverlays();updateQPanel();toast('Undo: reverted crop','info');
+  }
+  if(!undoStack.length)document.getElementById('undoBtn').disabled=true;
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+(function init(){
+  buildExamGrid();
+  const dz=document.getElementById('dropzone');
+  dz.ondragover=e=>{e.preventDefault();dz.classList.add('drag')};
+  dz.ondragleave=()=>dz.classList.remove('drag');
+  dz.ondrop=e=>{e.preventDefault();dz.classList.remove('drag');loadPDF(e.dataTransfer.files[0])};
+  document.getElementById('pdfInput').onchange=e=>loadPDF(e.target.files[0]);
+})();
+
+function buildExamGrid(){
+  const grid=document.getElementById('examGrid');
+  grid.innerHTML='';
+  Object.entries(EXAMS).forEach(([k,ex])=>{
+    const c=document.createElement('div');
+    c.className='exam-card'+(k===selectedExam?' sel':'');
+    c.dataset.key=k;
+    const metaStr=buildExamMeta(k,ex);
+    c.innerHTML=`<button class="exam-edit-btn" title="Edit config" onclick="openExamEdit(event,'${k}')">✎</button><div class="exam-name">${ex.label}</div><div class="exam-meta">${metaStr}</div>`;
+    c.onclick=(e)=>{if(e.target.classList.contains('exam-edit-btn'))return;selectExam(k,c)};
+    grid.appendChild(c);
+  });
+}
+
+function buildExamMeta(k,ex){
+  if(k==='JEE_ADV'){
+    const totalQ=ex.subjects.reduce((a,s)=>a+(s.sections?s.sections.reduce((b,sec)=>b+sec.count,0):s.count),0);
+    return `P${ex.paper||1} · ${totalQ} Qs · Varies/Sec · ${ex.dur}m`;
+  }
+  const totalQ=ex.subjects.reduce((a,s)=>a+s.count,0);
+  const mCor=ex.subjects[0]?.mCor||1;
+  const mNeg=ex.subjects[0]?.mNeg||0;
+  return `${totalQ} Qs · +${mCor}/−${mNeg} · ${ex.dur}m`;
+}
+
+function selectExam(k,cardEl){
+  selectedExam=k;
+  document.querySelectorAll('.exam-card').forEach(x=>x.classList.toggle('sel',x.dataset.key===k));
+  if(k==='CUSTOM'){
+    openCustomSetup();
+  } else if(k==='JEE_ADV'){
+    openAdvSetup();
+  }
+}
+
+// ── EXAM EDIT MODAL ───────────────────────────────────────────────────────
+function openExamEdit(e,key){
+  e.stopPropagation();
+  editingExamKey=key;
+  const ex=EXAMS[key];
+  const modal=document.getElementById('examEditModal');
+  document.getElementById('editModalTitle').textContent='Edit: '+ex.label;
+  document.getElementById('editModalSub').textContent='Adjust question counts and marking scheme.';
+  const body=document.getElementById('examEditBody');
+
+  if(key==='JEE_ADV'){
+    // ADV uses per-section config
+    body.innerHTML=`<div class="modal-field"><label class="modal-label">Duration (min)</label><input class="modal-input" id="editDur" type="number" value="${ex.dur}"/></div>`;
+    ex.subjects.forEach((subj,si)=>{
+      const wrap=document.createElement('div');
+      wrap.style.marginBottom='12px';
+      wrap.innerHTML=`<div style="font-size:.78rem;font-weight:700;color:var(--acc);margin-bottom:8px">${subj.name}</div>`;
+      subj.sections.forEach((sec,seci)=>{
+        const row=document.createElement('div');
+        row.style.cssText='background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:6px';
+        row.innerHTML=`<div style="font-size:.7rem;font-weight:600;color:var(--muted);margin-bottom:6px">${sec.name}</div>
+        <div class="modal-row3">
+          <div><label class="modal-label">Questions</label><input class="modal-input" data-si="${si}" data-seci="${seci}" data-f="count" type="number" value="${sec.count}" min="0"/></div>
+          <div><label class="modal-label">+Marks</label><input class="modal-input" data-si="${si}" data-seci="${seci}" data-f="mCor" type="number" value="${sec.mCor}" step="0.5" min="0"/></div>
+          <div><label class="modal-label">−Marks</label><input class="modal-input" data-si="${si}" data-seci="${seci}" data-f="mNeg" type="number" value="${sec.mNeg}" step="0.5" min="0"/></div>
+        </div>`;
+        wrap.appendChild(row);
+      });
+      body.appendChild(wrap);
+    });
+  } else {
+    body.innerHTML=`<div class="modal-field"><label class="modal-label">Duration (min)</label><input class="modal-input" id="editDur" type="number" value="${ex.dur}"/></div>
+    <div class="modal-field"><label class="modal-label">Subjects & Marking</label>
+    <div class="subj-row-hdr"><div class="subj-hdr-lbl">Subject</div><div class="subj-hdr-lbl">Questions</div><div class="subj-hdr-lbl">+Marks</div><div class="subj-hdr-lbl">−Marks</div><div></div></div>
+    <div id="editSubjRows"></div>
+    <button class="add-subj-btn" onclick="addEditSubjRow()">+ Add Subject</button>
+    </div>`;
+    ex.subjects.forEach((s,i)=>addEditSubjRow(s,i));
+  }
+  modal.classList.remove('hidden');
+}
+
+function addEditSubjRow(s,i){
+  const container=document.getElementById('editSubjRows');
+  const row=document.createElement('div');
+  row.className='subj-row';
+  const idx=i!==undefined?i:container.children.length;
+  row.dataset.idx=idx;
+  row.innerHTML=`<input class="modal-input" placeholder="Subject name" value="${s?s.name:''}"/>
+  <input class="modal-input" type="number" placeholder="Qs" value="${s?s.count:20}" min="1"/>
+  <input class="modal-input" type="number" placeholder="+M" value="${s?s.mCor:1}" step="0.5" min="0"/>
+  <input class="modal-input" type="number" placeholder="−M" value="${s?s.mNeg:0}" step="0.5" min="0"/>
+  <button class="remove-subj" onclick="this.parentElement.remove()">✕</button>`;
+  container.appendChild(row);
+}
+
+function saveExamEdit(){
+  const key=editingExamKey;
+  const ex=EXAMS[key];
+  if(key==='JEE_ADV'){
+    const durEl=document.getElementById('editDur');
+    if(durEl)ex.dur=parseInt(durEl.value)||180;
+    document.querySelectorAll('[data-si]').forEach(inp=>{
+      const si=parseInt(inp.dataset.si),seci=parseInt(inp.dataset.seci),f=inp.dataset.f;
+      ex.subjects[si].sections[seci][f]=parseFloat(inp.value)||0;
+    });
+  } else {
+    ex.dur=parseInt(document.getElementById('editDur').value)||180;
+    const rows=document.querySelectorAll('#editSubjRows .subj-row');
+    ex.subjects=[];
+    rows.forEach(row=>{
+      const inputs=row.querySelectorAll('input');
+      ex.subjects.push({name:inputs[0].value||'Subject',count:parseInt(inputs[1].value)||20,mCor:parseFloat(inputs[2].value)||1,mNeg:parseFloat(inputs[3].value)||0});
+    });
+    const totalQ=ex.subjects.reduce((a,s)=>a+s.count,0);
+    ex.meta=`${totalQ} Qs · +${ex.subjects[0]?.mCor}/−${ex.subjects[0]?.mNeg} · ${ex.dur}m`;
+  }
+  closeExamEdit();
+  buildExamGrid();
+  toast('Exam config updated!','ok');
+}
+
+function closeExamEdit(){document.getElementById('examEditModal').classList.add('hidden')}
+
+// ── CUSTOM EXAM SETUP ─────────────────────────────────────────────────────
+function openCustomSetup(){
+  document.getElementById('customSetupModal').classList.remove('hidden');
+  document.getElementById('customLabel').value='My Custom Exam';
+  const rows=document.getElementById('customSubjRows');
+  rows.innerHTML='';
+  addCustomSubjRow({name:'Subject 1',count:30,mCor:1,mNeg:0});
+}
+
+function addCustomSubjRow(s){
+  const container=document.getElementById('customSubjRows');
+  const row=document.createElement('div');
+  row.className='subj-row';
+  row.innerHTML=`<input class="modal-input" placeholder="Subject name" value="${s?s.name:''}"/>
+  <input class="modal-input" type="number" placeholder="Qs" value="${s?s.count:20}" min="1"/>
+  <input class="modal-input" type="number" placeholder="+M" value="${s?s.mCor:1}" step="0.5" min="0"/>
+  <input class="modal-input" type="number" placeholder="−M" value="${s?s.mNeg:0}" step="0.5" min="0"/>
+  <button class="remove-subj" onclick="this.parentElement.remove()">✕</button>`;
+  container.appendChild(row);
+}
+
+function saveCustomSetup(){
+  const label=document.getElementById('customLabel').value.trim()||'Custom Exam';
+  const dur=parseInt(document.getElementById('customDur').value)||180;
+  const rows=document.querySelectorAll('#customSubjRows .subj-row');
+  if(!rows.length){toast('Add at least one subject','err');return}
+  const subjects=[];
+  rows.forEach(row=>{
+    const inputs=row.querySelectorAll('input');
+    subjects.push({name:inputs[0].value||'Subject',count:parseInt(inputs[1].value)||20,mCor:parseFloat(inputs[2].value)||1,mNeg:parseFloat(inputs[3].value)||0});
+  });
+  const totalQ=subjects.reduce((a,s)=>a+s.count,0);
+  EXAMS.CUSTOM={label,dur,subjects,meta:`${totalQ} Qs · Custom · ${dur}m`,isCustom:true};
+  document.getElementById('customSetupModal').classList.add('hidden');
+  buildExamGrid();
+  toast('Custom exam created!','ok');
+}
+
+// ── JEE ADV SETUP ─────────────────────────────────────────────────────────
+function openAdvSetup(){
+  advPaperSelected=EXAMS.JEE_ADV.paper||1;
+  document.getElementById('advSetupModal').classList.remove('hidden');
+  renderAdvSetup();
+}
+
+function selectAdvPaper(p){
+  advPaperSelected=p;
+  document.querySelectorAll('[data-p]').forEach(t=>t.classList.toggle('on',parseInt(t.dataset.p)===p));
+  renderAdvSetup();
+}
+
+function renderAdvSetup(){
+  const ex=EXAMS.JEE_ADV;
+  const body=document.getElementById('advSectionBody');
+  body.innerHTML=`<div style="font-size:.75rem;color:var(--muted);margin-bottom:12px">Configure sections for Paper ${advPaperSelected}</div>`;
+  ex.subjects.forEach((subj,si)=>{
+    const wrap=document.createElement('div');
+    wrap.className='adv-section-wrap';
+    wrap.innerHTML=`<div class="adv-section-title">${subj.name}</div>`;
+    subj.sections.forEach((sec,seci)=>{
+      const row=document.createElement('div');
+      row.style.cssText='margin-bottom:8px';
+      row.innerHTML=`<div style="font-size:.7rem;font-weight:600;margin-bottom:5px;color:var(--text)">${sec.name}</div>
+      <div class="modal-row3">
+        <div><label class="modal-label">Questions</label><input class="modal-input" data-si="${si}" data-seci="${seci}" data-f="count" type="number" value="${sec.count}" min="0"/></div>
+        <div><label class="modal-label">+Marks</label><input class="modal-input" data-si="${si}" data-seci="${seci}" data-f="mCor" type="number" value="${sec.mCor}" step="0.5" min="0"/></div>
+        <div><label class="modal-label">−Marks</label><input class="modal-input" data-si="${si}" data-seci="${seci}" data-f="mNeg" type="number" value="${sec.mNeg}" step="0.5" min="0"/></div>
+      </div>`;
+      wrap.appendChild(row);
+    });
+    body.appendChild(wrap);
+  });
+}
+
+function saveAdvSetup(){
+  const ex=EXAMS.JEE_ADV;
+  ex.paper=advPaperSelected;
+  document.querySelectorAll('#advSectionBody [data-si]').forEach(inp=>{
+    const si=parseInt(inp.dataset.si),seci=parseInt(inp.dataset.seci),f=inp.dataset.f;
+    ex.subjects[si].sections[seci][f]=parseFloat(inp.value)||0;
+  });
+  document.getElementById('advSetupModal').classList.add('hidden');
+  buildExamGrid();
+  toast(`JEE Adv Paper ${advPaperSelected} configured!`,'ok');
+}
+
+// ── PDF LOAD ──────────────────────────────────────────────────────────────
+async function loadPDF(file){
+  if(!file||file.type!=='application/pdf'){toast('Please upload a PDF','err');return}
+  const buf=await file.arrayBuffer();
+  originalPdfBytes=new Uint8Array(buf);
+  pdfDoc=await pdfjsLib.getDocument({data:originalPdfBytes}).promise;
+  document.getElementById('dropTitle').textContent='✓ '+file.name;
+  document.getElementById('dropSub').textContent=`${pdfDoc.numPages} pages · ${(file.size/1024).toFixed(0)} KB`;
+  document.getElementById('dropzone').classList.add('loaded');
+  toast('PDF loaded: '+pdfDoc.numPages+' pages','ok');
+}
+
+// ── START CROPPING ────────────────────────────────────────────────────────
+async function startCropping(){
+  if(!pdfDoc){toast('Upload a PDF first!','err');return}
+  const exam=EXAMS[selectedExam];
+  questions=[];
+  let n=0;
+  if(selectedExam==='JEE_ADV'){
+    // Flatten sections
+    exam.subjects.forEach(subj=>{
+      subj.sections.forEach(sec=>{
+        for(let i=1;i<=sec.count;i++){
+          n++;
+          questions.push({subject:subj.name,section:sec.name,qnum:n,sQ:i,
+            mCor:sec.mCor,mNeg:sec.mNeg,type:sec.type||'MCQ',
+            imageData:null,cropped:false,cropPageNum:null,
+            cropY1:null,cropY2:null,cropX1:null,cropX2:null,paper:exam.paper||1});
+        }
+      });
+    });
+  } else {
+    exam.subjects.forEach(s=>{
+      for(let i=1;i<=s.count;i++){
+        n++;
+        questions.push({subject:s.name,qnum:n,sQ:i,
+          mCor:s.mCor,mNeg:s.mNeg,type:'MCQ',
+          imageData:null,cropped:false,cropPageNum:null,
+          cropY1:null,cropY2:null,cropX1:null,cropX2:null,
+          isBonus:s.name==='Bonus'});
+      }
+    });
+  }
+  renderedPages={};guideLines=[];vGuideLines=[];activeQ=0;undoStack=[];
+  document.getElementById('undoBtn').disabled=true;
+  goStep(2);
+  buildQPanel();
+  await renderAllPages();
+  setMode('box');
+  setupCropEvents();
+  setActiveQ(0);
+}
+
+// ── RENDER ALL PAGES ──────────────────────────────────────────────────────
+async function renderAllPages(){
+  const wrap=document.getElementById('pagesWrap');
+  wrap.innerHTML='';
+  document.getElementById('pageCounter').textContent=`${pdfDoc.numPages} pages`;
+  for(let p=1;p<=pdfDoc.numPages;p++){
+    const page=await pdfDoc.getPage(p);
+    const vp=page.getViewport({scale:zoom*window.devicePixelRatio});
+    const container=document.createElement('div');
+    container.className='pdf-page-container';
+    container.dataset.page=p;
+    container.style.width=(vp.width/window.devicePixelRatio)+'px';
+    container.style.height=(vp.height/window.devicePixelRatio)+'px';
+    const lbl=document.createElement('div');
+    lbl.className='page-label';lbl.textContent='Page '+p;
+    container.appendChild(lbl);
+    const canvas=document.createElement('canvas');
+    canvas.className='pdf-page-canvas';
+    canvas.width=vp.width;canvas.height=vp.height;
+    canvas.style.width=(vp.width/window.devicePixelRatio)+'px';
+    canvas.style.height=(vp.height/window.devicePixelRatio)+'px';
+    await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;
+    container.appendChild(canvas);
+    wrap.appendChild(container);
+    renderedPages[p]={canvas,container,width:vp.width/window.devicePixelRatio,height:vp.height/window.devicePixelRatio};
+  }
+  renderAllCroppedOverlays();
+}
+
+async function reRenderPages(){
+  // Save all state before re-render
+  const hBackup=guideLines.map(g=>({pageNum:g.pageNum,yRatio:g.yRatio,colX1Ratio:g.colX1Ratio,colX2Ratio:g.colX2Ratio}));
+  const vBackup=vGuideLines.map(g=>({pageNum:g.pageNum,xRatio:g.xRatio}));
+  guideLines=[];vGuideLines=[];
+  await renderAllPages();
+  // Restore V-lines first (H-lines depend on them for column detection)
+  vBackup.forEach(g=>{if(renderedPages[g.pageNum])addVGuideAt(g.pageNum,g.xRatio,true)});
+  // Restore H-lines using their saved column ratios
+  hBackup.forEach(g=>{
+    if(!renderedPages[g.pageNum])return;
+    const pr=renderedPages[g.pageNum];
+    // Use midpoint of saved column to find correct slot
+    const midX=(g.colX1Ratio+g.colX2Ratio)/2*pr.width;
+    addGuideAt(g.pageNum,g.yRatio,true,midX);
+  });
+}
+
+function changeZoom(d){zoom=Math.max(0.3,Math.min(3,zoom+d));document.getElementById('zoomLabel').textContent=Math.round(zoom*100)+'%';reRenderPages()}
+function fitZoom(){
+  const wrap=document.getElementById('pdfScroll');
+  if(!pdfDoc)return;
+  const firstPage=renderedPages[1];
+  if(!firstPage)return;
+  const naturalW=firstPage.canvas.width/window.devicePixelRatio/zoom;
+  zoom=(wrap.clientWidth-60)/naturalW;
+  document.getElementById('zoomLabel').textContent=Math.round(zoom*100)+'%';
+  reRenderPages();
+}
+
+// ── MODE SWITCH ───────────────────────────────────────────────────────────
+function setMode(m){
+  cropMode=m;
+  document.getElementById('modeBox').classList.toggle('on',m==='box');
+  document.getElementById('modeVLine').classList.toggle('on-vline',m==='vline');
+  document.getElementById('modeLine').classList.toggle('on',m==='line');
+  document.getElementById('modeMove').classList.toggle('on-move',m==='move');
+  // Remove conflicting active states
+  ['modeBox','modeVLine','modeLine','modeMove'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(id==='modeBox'&&m!=='box')el.classList.remove('on');
+    if(id==='modeVLine'&&m!=='vline')el.classList.remove('on-vline');
+    if(id==='modeLine'&&m!=='line')el.classList.remove('on');
+    if(id==='modeMove'&&m!=='move')el.classList.remove('on-move');
+  });
+  const scroll=document.getElementById('pdfScroll');
+  const hints={
+    box:'Drag on PDF to crop selected question',
+    vline:'Click to place vertical boundary lines (sets left/right column edges)',
+    line:'Click to add horizontal guide lines · drag to reposition',
+    move:'Pan/scroll freely — no drawing'
+  };
+  document.getElementById('toolHint').textContent=hints[m]||'';
+  scroll.style.cursor={box:'crosshair',vline:'col-resize',line:'row-resize',move:'grab'}[m]||'default';
+}
+
+// ── CROP EVENTS ───────────────────────────────────────────────────────────
+function setupCropEvents(){
+  const scroll=document.getElementById('pdfScroll');
+
+  scroll.addEventListener('mousedown',e=>{
+    if(cropMode==='move'){
+      moveDragging=true;
+      moveStartPos={x:e.clientX,y:e.clientY,scrollLeft:scroll.scrollLeft,scrollTop:scroll.scrollTop};
+      scroll.style.cursor='grabbing';
+      e.preventDefault();return;
+    }
+    if(cropMode==='box'){
+      // Don't start a new crop if clicking on an existing overlay's handles
+      if(e.target.closest('.cropped-overlay'))return;
+      const info=getPageAndPos(e);
+      if(!info)return;
+      boxDragging=true;boxPageNum=info.pageNum;
+      boxStart={x:info.x,y:info.y};boxCurrent={x:info.x,y:info.y};
+      if(activeCropBox&&activeCropBox.div.parentElement)activeCropBox.div.remove();
+      const box=document.createElement('div');
+      box.className='crop-sel-box';
+      box.innerHTML='<div class="ch tl"></div><div class="ch tr"></div><div class="ch bl"></div><div class="ch br"></div>';
+      box.style.cssText=`left:${info.x}px;top:${info.y}px;width:0;height:0`;
+      renderedPages[info.pageNum].container.appendChild(box);
+      activeCropBox={div:box,pageNum:info.pageNum};
+      e.preventDefault();
+    } else if(cropMode==='line'){
+      const info=getPageAndPos(e);
+      if(!info)return;
+      if(e.target.closest('.guide-line'))return; // clicking on existing line, handled by line drag
+      addGuideAt(info.pageNum,info.y/renderedPages[info.pageNum].height,false,info.x);
+      e.preventDefault();
+    } else if(cropMode==='vline'){
+      const info=getPageAndPos(e);
+      if(!info)return;
+      if(e.target.closest('.vguide-line'))return;
+      addVGuideAt(info.pageNum,info.x/renderedPages[info.pageNum].width);
+      e.preventDefault();
+    }
+  });
+
+  scroll.addEventListener('mousemove',e=>{
+    if(cropMode==='move'&&moveDragging){
+      const dx=e.clientX-moveStartPos.x, dy=e.clientY-moveStartPos.y;
+      scroll.scrollLeft=moveStartPos.scrollLeft-dx;
+      scroll.scrollTop=moveStartPos.scrollTop-dy;
+      return;
+    }
+    if(cropMode==='box'&&boxDragging){
+      const info=getPageAndPos(e,boxPageNum);
+      if(!info)return;
+      boxCurrent={x:info.x,y:info.y};
+      updateBoxUI();
+    }
+  });
+
+  scroll.addEventListener('mouseup',e=>{
+    if(cropMode==='move'&&moveDragging){
+      moveDragging=false;scroll.style.cursor='grab';return;
+    }
+    if(cropMode==='box'&&boxDragging){
+      boxDragging=false;
+      const w=Math.abs(boxCurrent.x-boxStart.x),h=Math.abs(boxCurrent.y-boxStart.y);
+      if(w>10&&h>10)captureCrop();
+    }
+  });
+
+  // Touch support
+  scroll.addEventListener('touchstart',e=>{
+    if(cropMode==='move')return; // allow native scroll
+    e.preventDefault();
+  },{passive:false});
+}
+
+function getPageAndPos(e,forcePageNum){
+  const target=forcePageNum
+    ?renderedPages[forcePageNum]?.container
+    :e.target.closest('.pdf-page-container');
+  if(!target)return null;
+  const pageNum=parseInt(target.dataset?.page||forcePageNum);
+  if(!renderedPages[pageNum])return null;
+  const rect=target.getBoundingClientRect();
+  const x=Math.max(0,Math.min(e.clientX-rect.left,renderedPages[pageNum].width));
+  const y=Math.max(0,Math.min(e.clientY-rect.top,renderedPages[pageNum].height));
+  return{pageNum,x,y,container:target};
+}
+
+function updateBoxUI(){
+  if(!activeCropBox)return;
+  const x=Math.min(boxStart.x,boxCurrent.x),y=Math.min(boxStart.y,boxCurrent.y);
+  const w=Math.abs(boxCurrent.x-boxStart.x),h=Math.abs(boxCurrent.y-boxStart.y);
+  activeCropBox.div.style.cssText=`left:${x}px;top:${y}px;width:${w}px;height:${h}px;position:absolute;border:2.5px solid var(--acc);background:rgba(110,231,183,.07);pointer-events:none;border-radius:2px;z-index:10`;
+}
+
+// ── CAPTURE CROP (box mode) ───────────────────────────────────────────────
+function captureCrop(){
+  const q=questions[activeQ];
+  const canvas=renderedPages[boxPageNum]?.canvas;
+  if(!canvas)return;
+  const dpr=window.devicePixelRatio;
+  // Clamp within vertical boundaries if set
+  let x=Math.min(boxStart.x,boxCurrent.x);
+  let x2=Math.max(boxStart.x,boxCurrent.x);
+  const y=Math.min(boxStart.y,boxCurrent.y);
+  const h=Math.abs(boxCurrent.y-boxStart.y);
+  const w=x2-x;
+
+  // Push undo
+  pushUndo({type:'crop',q,prevImageData:q.imageData,prevCropped:q.cropped,prevPage:q.cropPageNum,prevY1:q.cropY1,prevY2:q.cropY2,prevX1:q.cropX1,prevX2:q.cropX2});
+
+  const tmp=document.createElement('canvas');
+  tmp.width=w*dpr;tmp.height=h*dpr;
+  tmp.getContext('2d').drawImage(canvas,x*dpr,y*dpr,w*dpr,h*dpr,0,0,w*dpr,h*dpr);
+  q.imageData=tmp.toDataURL('image/png').split(',')[1];
+  q.cropped=true;q.cropPageNum=boxPageNum;
+  q.cropY1=y;q.cropY2=y+h;q.cropX1=x;q.cropX2=x+w;
+  renderAllCroppedOverlays();updateQPanel();
+  const next=questions.findIndex((qq,i)=>i>activeQ&&!qq.cropped);
+  if(next!==-1){setActiveQ(next);toast(`✓ Q${q.qnum} saved → Q${questions[next].qnum}`,'ok')}
+  else{const any=questions.findIndex(qq=>!qq.cropped);setActiveQ(any!==-1?any:activeQ);if(any===-1)toast('All cropped! ✓','ok');else toast(`✓ Q${q.qnum} saved`,'ok')}
+}
+
+// ── CROPPED OVERLAYS ──────────────────────────────────────────────────────
+function renderAllCroppedOverlays(){
+  document.querySelectorAll('.cropped-overlay').forEach(el=>el.remove());
+  questions.filter(q=>q.cropped&&q.cropPageNum).forEach(q=>{
+    const pr=renderedPages[q.cropPageNum];if(!pr)return;
+    const ov=document.createElement('div');
+    ov.className='cropped-overlay';
+    ov.style.cssText=`left:${q.cropX1||0}px;top:${q.cropY1}px;width:${(q.cropX2||pr.width)-(q.cropX1||0)}px;height:${q.cropY2-q.cropY1}px;position:absolute`;
+    const secBadge=q.section?`<span class="section-badge">${q.section}</span>`:'';
+    ov.innerHTML=`
+      <div class="ov-drag"></div>
+      <div class="cropped-label">${q.subject} Q${q.qnum}${secBadge}</div>
+      <div class="rh tl" data-rh="tl"></div><div class="rh tc" data-rh="tc"></div><div class="rh tr" data-rh="tr"></div>
+      <div class="rh ml" data-rh="ml"></div><div class="rh mr" data-rh="mr"></div>
+      <div class="rh bl" data-rh="bl"></div><div class="rh bc" data-rh="bc"></div><div class="rh br" data-rh="br"></div>`;
+    pr.container.appendChild(ov);
+    attachOverlayInteraction(ov, q, pr);
+  });
+}
+
+function attachOverlayInteraction(ov, q, pr){
+  // Resize handles
+  ov.querySelectorAll('.rh').forEach(handle=>{
+    handle.addEventListener('mousedown', e=>{
+      e.stopPropagation(); e.preventDefault();
+      const dir=handle.dataset.rh;
+      const startX=e.clientX, startY=e.clientY;
+      const origX1=q.cropX1, origY1=q.cropY1, origX2=q.cropX2, origY2=q.cropY2;
+      const onMove=ev=>{
+        const rect=pr.container.getBoundingClientRect();
+        const dx=ev.clientX-startX, dy=ev.clientY-startY;
+        let nx1=origX1,ny1=origY1,nx2=origX2,ny2=origY2;
+        if(dir.includes('l')) nx1=Math.max(0,Math.min(origX2-10,origX1+dx));
+        if(dir.includes('r')) nx2=Math.max(origX1+10,Math.min(pr.width,origX2+dx));
+        if(dir.includes('t')) ny1=Math.max(0,Math.min(origY2-10,origY1+dy));
+        if(dir.includes('b')) ny2=Math.max(origY1+10,Math.min(pr.height,origY2+dy));
+        if(dir==='tc'||dir==='bc'){nx1=origX1;nx2=origX2}
+        if(dir==='ml'||dir==='mr'){ny1=origY1;ny2=origY2}
+        ov.style.left=nx1+'px';ov.style.top=ny1+'px';
+        ov.style.width=(nx2-nx1)+'px';ov.style.height=(ny2-ny1)+'px';
+        q.cropX1=nx1;q.cropX2=nx2;q.cropY1=ny1;q.cropY2=ny2;
+      };
+      const onUp=()=>{
+        document.removeEventListener('mousemove',onMove);
+        document.removeEventListener('mouseup',onUp);
+        // Re-capture image from new bounds
+        recaptureCrop(q,pr);
+        updateQPanel();
+      };
+      document.addEventListener('mousemove',onMove);
+      document.addEventListener('mouseup',onUp);
+    });
+  });
+  // Drag to move whole box
+  const dragHandle=ov.querySelector('.ov-drag');
+  if(dragHandle){
+    dragHandle.addEventListener('mousedown',e=>{
+      e.stopPropagation();e.preventDefault();
+      const startX=e.clientX,startY=e.clientY;
+      const origX1=q.cropX1,origY1=q.cropY1,origX2=q.cropX2,origY2=q.cropY2;
+      const w=origX2-origX1,h=origY2-origY1;
+      const onMove=ev=>{
+        const dx=ev.clientX-startX,dy=ev.clientY-startY;
+        const nx1=Math.max(0,Math.min(pr.width-w,origX1+dx));
+        const ny1=Math.max(0,Math.min(pr.height-h,origY1+dy));
+        q.cropX1=nx1;q.cropY1=ny1;q.cropX2=nx1+w;q.cropY2=ny1+h;
+        ov.style.left=nx1+'px';ov.style.top=ny1+'px';
+      };
+      const onUp=()=>{
+        document.removeEventListener('mousemove',onMove);
+        document.removeEventListener('mouseup',onUp);
+        recaptureCrop(q,pr);
+        updateQPanel();
+      };
+      document.addEventListener('mousemove',onMove);
+      document.addEventListener('mouseup',onUp);
+    });
+  }
+}
+
+function recaptureCrop(q,pr){
+  const canvas=pr.canvas;if(!canvas)return;
+  const dpr=window.devicePixelRatio;
+  const x=q.cropX1,y=q.cropY1,w=q.cropX2-q.cropX1,h=q.cropY2-q.cropY1;
+  if(w<4||h<4)return;
+  const tmp=document.createElement('canvas');
+  tmp.width=w*dpr;tmp.height=h*dpr;
+  tmp.getContext('2d').drawImage(canvas,x*dpr,y*dpr,w*dpr,h*dpr,0,0,w*dpr,h*dpr);
+  q.imageData=tmp.toDataURL('image/png').split(',')[1];
+  // Update thumbnail in Q panel
+  const thumb=document.querySelector(`.qi[data-qnum="${q.qnum}"] .qi-thumb img`);
+  if(thumb)thumb.src='data:image/png;base64,'+q.imageData;
+}
+
+// ── VERTICAL BOUNDARY LINES ───────────────────────────────────────────────
+function addVGuideAt(pageNum,xRatio,silent){
+  const pr=renderedPages[pageNum];if(!pr)return;
+  const x=xRatio*pr.width;
+  const idx=vGuideLines.length;
+  const lineDiv=document.createElement('div');
+  lineDiv.className='vguide-line';
+  lineDiv.style.cssText=`left:${x}px;top:0;bottom:0;position:absolute;z-index:25;width:12px;margin-left:-6px`;
+  lineDiv.innerHTML=`<div class="vguide-line-inner"></div><div class="vguide-line-handle">V${idx+1}</div><div class="vguide-delete" title="Delete" onclick="deleteVGuide(${idx})">✕</div>`;
+  pr.container.appendChild(lineDiv);
+  const guide={pageNum,xRatio,x,div:lineDiv,idx};
+  vGuideLines.push(guide);
+
+  // Drag
+  let startX=0,startGX=0;
+  const onDown=e=>{
+    startX=e.clientX;startGX=guide.x;
+    const onMove=ev=>{
+      const dx=ev.clientX-startX;
+      const newX=Math.max(0,Math.min(pr.width,startGX+dx));
+      guide.x=newX;guide.xRatio=newX/pr.width;
+      lineDiv.style.left=newX+'px';
+      updateColZones();
+    };
+    const onUp=()=>{document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);updateColZones()};
+    document.addEventListener('mousemove',onMove);
+    document.addEventListener('mouseup',onUp);
+    e.preventDefault();e.stopPropagation();
+  };
+  lineDiv.addEventListener('mousedown',onDown);
+
+  if(!silent)pushUndo({type:'addVLine',guide});
+  updateColZones();
+  if(!silent)toast(`Vertical boundary ${idx+1} added — drag to reposition`,'info');
+}
+
+function deleteVGuide(idx){
+  const g=vGuideLines.find(vg=>vg.idx===idx);
+  if(!g)return;
+  g.div.remove();
+  vGuideLines=vGuideLines.filter(vg=>vg.idx!==idx);
+  updateColZones();
+}
+
+function updateColZones(){
+  document.querySelectorAll('.col-zone').forEach(el=>el.remove());
+  const byPage={};
+  vGuideLines.forEach(g=>{
+    if(!byPage[g.pageNum])byPage[g.pageNum]=[];
+    byPage[g.pageNum].push(g);
+  });
+  Object.entries(byPage).forEach(([pn,lines])=>{
+    const pr=renderedPages[pn];if(!pr)return;
+    const sorted=[...lines].sort((a,b)=>a.x-b.x);
+    const boundaries=[0,...sorted.map(l=>l.x),pr.width];
+    boundaries.forEach((bx,bi)=>{
+      if(bi===boundaries.length-1)return;
+      const colW=boundaries[bi+1]-bx;
+      if(colW<10)return;
+      const zone=document.createElement('div');
+      zone.className='col-zone';
+      zone.style.cssText=`left:${bx}px;width:${colW}px;top:0;height:${pr.height}px;position:absolute`;
+      zone.innerHTML=`<div class="col-zone-label">Col ${bi+1}</div>`;
+      pr.container.appendChild(zone);
+    });
+  });
+  // Refresh H-line positions using their stored column ratios (survives zoom)
+  guideLines.forEach(g=>{
+    const pr=renderedPages[g.pageNum];if(!pr)return;
+    const [newX1,newX2]=getColForX(g.pageNum, g.colX1Ratio*pr.width + 1);
+    g.colX1Ratio=newX1/pr.width; g.colX2Ratio=newX2/pr.width;
+    g.div.style.left=newX1+'px';
+    g.div.style.width=(newX2-newX1)+'px';
+    g.div.style.removeProperty('right');
+  });
+}
+
+// ── HORIZONTAL GUIDE LINES ────────────────────────────────────────────────
+// Returns sorted vertical boundaries for a page as array of x values (including 0 and page width)
+function getColBoundaries(pageNum){
+  const pr=renderedPages[pageNum];if(!pr)return[0,pr?.width||9999];
+  const vForPage=vGuideLines.filter(v=>v.pageNum===pageNum).sort((a,b)=>a.x-b.x);
+  return [0,...vForPage.map(v=>v.x),pr.width];
+}
+
+// Returns which column slot an x position falls in: [colLeft, colRight]
+function getColForX(pageNum,x){
+  const bounds=getColBoundaries(pageNum);
+  for(let i=0;i<bounds.length-1;i++){
+    if(x>=bounds[i]&&x<bounds[i+1]) return [bounds[i],bounds[i+1]];
+  }
+  return [0,renderedPages[pageNum]?.width||9999];
+}
+
+// For H-lines with no specific column (backward compat), use outermost V bounds
+function getVBounds(pageNum){
+  const pr=renderedPages[pageNum];
+  const vForPage=vGuideLines.filter(v=>v.pageNum===pageNum).sort((a,b)=>a.x-b.x);
+  if(vForPage.length>=2) return [vForPage[0].x, vForPage[vForPage.length-1].x];
+  if(vForPage.length===1) return [vForPage[0].x, pr?.width||9999];
+  return [0, pr?.width||9999];
+}
+
+function addGuideAt(pageNum,yRatio,silent,clickX){
+  const pr=renderedPages[pageNum];if(!pr)return;
+  const y=yRatio*pr.height;
+  // Determine column slot from where the user clicked
+  const [colX1,colX2]= (clickX!=null) ? getColForX(pageNum,clickX) : getVBounds(pageNum);
+  const idx=guideLines.length;
+  const lineDiv=document.createElement('div');
+  lineDiv.className='guide-line';
+  lineDiv.style.cssText=`top:${y-6}px;left:${colX1}px;width:${colX2-colX1}px;position:absolute;z-index:20;height:12px`;
+  lineDiv.innerHTML=`<div class="guide-line-inner"></div><div class="guide-line-handle">H${idx+1}</div><div class="guide-line-delete" title="Delete" onclick="deleteHGuide(${idx})">✕</div>`;
+  pr.container.appendChild(lineDiv);
+  // Store colX1/colX2 ratio so zoom can recalculate
+  const guide={pageNum,yRatio,y,colX1Ratio:colX1/pr.width,colX2Ratio:colX2/pr.width,div:lineDiv,idx};
+  guideLines.push(guide);
+
+  let startY=0,startGY=0;
+  const onDown=e=>{
+    startY=e.clientY;startGY=guide.y;
+    const onMove=ev=>{
+      const dy=ev.clientY-startY;
+      const newY=Math.max(0,Math.min(pr.height,startGY+dy));
+      guide.y=newY;guide.yRatio=newY/pr.height;
+      lineDiv.style.top=(newY-6)+'px';
+      updateTrapZones();
+    };
+    const onUp=()=>{document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);updateTrapZones()};
+    document.addEventListener('mousemove',onMove);
+    document.addEventListener('mouseup',onUp);
+    e.preventDefault();e.stopPropagation();
+  };
+  lineDiv.addEventListener('mousedown',onDown);
+
+  if(!silent)pushUndo({type:'addHLine',guide});
+  updateTrapZones();
+  if(!silent)toast(`H-line ${idx+1} added — drag to move`,'ok');
+}
+
+function deleteHGuide(idx){
+  const g=guideLines.find(gl=>gl.idx===idx);
+  if(!g)return;
+  g.div.remove();
+  guideLines=guideLines.filter(gl=>gl.idx!==idx);
+  updateTrapZones();
+}
+
+function updateTrapZones(){
+  document.querySelectorAll('.trap-zone').forEach(el=>el.remove());
+  // Group H-lines by page AND by exact column slot
+  const byCol={};
+  guideLines.forEach(g=>{
+    const pr=renderedPages[g.pageNum];if(!pr)return;
+    const cx1=Math.round(g.colX1Ratio*pr.width);
+    const cx2=Math.round(g.colX2Ratio*pr.width);
+    const key=`${g.pageNum}|${cx1}|${cx2}`;
+    if(!byCol[key])byCol[key]={pageNum:g.pageNum,cx1,cx2,lines:[]};
+    byCol[key].lines.push(g);
+  });
+  Object.values(byCol).forEach(({pageNum,cx1,cx2,lines})=>{
+    const pr=renderedPages[pageNum];if(!pr)return;
+    const sorted=[...lines].sort((a,b)=>a.y-b.y);
+    for(let i=0;i<sorted.length-1;i++){
+      const t=sorted[i].y,b=sorted[i+1].y,h=b-t;
+      if(h<4)continue;
+      const zone=document.createElement('div');
+      zone.className='trap-zone';
+      zone.style.cssText=`top:${t}px;height:${h}px;left:${cx1}px;width:${cx2-cx1}px;position:absolute;pointer-events:auto;cursor:pointer`;
+      zone.innerHTML=`<div class="trap-zone-label">Click → Q${questions[activeQ]?.qnum||'?'}</div>`;
+      const capT=t,capB=b,capPN=pageNum,capX1=cx1,capX2=cx2;
+      zone.onclick=(e)=>{e.stopPropagation();cropFromZone(capPN,capT,capB,capX1,capX2)};
+      pr.container.appendChild(zone);
+    }
+  });
+}
+
+function cropFromZone(pageNum,y1,y2,x1,x2){
+  const q=questions[activeQ];
+  const pr=renderedPages[pageNum];if(!pr)return;
+  const canvas=pr.canvas,dpr=window.devicePixelRatio;
+  const fx1=x1??0,fx2=x2??pr.width;
+  pushUndo({type:'crop',q,prevImageData:q.imageData,prevCropped:q.cropped,prevPage:q.cropPageNum,prevY1:q.cropY1,prevY2:q.cropY2,prevX1:q.cropX1,prevX2:q.cropX2});
+  const tmp=document.createElement('canvas');
+  tmp.width=(fx2-fx1)*dpr;tmp.height=(y2-y1)*dpr;
+  tmp.getContext('2d').drawImage(canvas,fx1*dpr,y1*dpr,(fx2-fx1)*dpr,(y2-y1)*dpr,0,0,(fx2-fx1)*dpr,(y2-y1)*dpr);
+  q.imageData=tmp.toDataURL('image/png').split(',')[1];
+  q.cropped=true;q.cropPageNum=pageNum;
+  q.cropY1=y1;q.cropY2=y2;q.cropX1=fx1;q.cropX2=fx2;
+  renderAllCroppedOverlays();updateQPanel();
+  const next=questions.findIndex((qq,i)=>i>activeQ&&!qq.cropped);
+  if(next!==-1){setActiveQ(next);toast(`✓ Q${q.qnum} cropped → Q${questions[next].qnum}`,'ok')}
+  else toast(`✓ Q${q.qnum} cropped from zone`,'ok');
+  updateTrapZones();
+}
+
+// ── Q PANEL ───────────────────────────────────────────────────────────────
+function buildQPanel(){
+  const exam=EXAMS[selectedExam];
+  const tabs=document.getElementById('subjTabs');
+  tabs.innerHTML='';
+  let subjects;
+  if(selectedExam==='JEE_ADV'){
+    subjects=[...new Set(exam.subjects.map(s=>s.name))];
+  } else {
+    subjects=[...new Set(exam.subjects.map(s=>s.name))];
+  }
+  subjects.forEach((s,i)=>{
+    const t=document.createElement('div');
+    t.className='stab'+(i===0?' on':'');
+    t.textContent=s;t.dataset.s=s;
+    t.onclick=()=>{document.querySelectorAll('.stab').forEach(x=>x.classList.remove('on'));t.classList.add('on');renderQList(s)};
+    tabs.appendChild(t);
+  });
+  renderQList(subjects[0]);
+}
+
+function updateQPanel(){
+  const done=questions.filter(q=>q.cropped).length;
+  document.getElementById('qpSub').textContent=`${done} / ${questions.length} cropped`;
+  document.getElementById('progressFill').style.width=(done/questions.length*100)+'%';
+  document.getElementById('progressLbl').textContent=`${done} of ${questions.length} cropped`;
+  const active=document.querySelector('.stab.on');
+  renderQList(active?active.dataset.s:null);
+}
+
+// renderQList moved above
+
+function setActiveQ(idx){
+  activeQ=idx;const q=questions[idx];
+  // Clear any in-progress crop box
+  if(activeCropBox&&activeCropBox.div.parentElement)activeCropBox.div.remove();
+  activeCropBox=null; boxDragging=false;
+  const secInfo=q.section?` · ${q.section}`:'';
+  document.getElementById('instructions').innerHTML=
+    `<b>Q${q.qnum} — ${q.subject}${secInfo}</b><br>+${q.mCor}/−${q.mNeg} · ${q.type||'MCQ'}<br>${q.cropped?'✓ Done. Re-drag/zone to update.':'Drag (box) or click zone (guide).'}<br><span style="color:var(--muted);font-size:.66rem">Scroll to find the question</span>`;
+  updateQPanel();
+  updateTrapZones();
+  if(q.cropPageNum&&renderedPages[q.cropPageNum]){
+    const container=renderedPages[q.cropPageNum].container;
+    const scroll=document.getElementById('pdfScroll');
+    const wrapRect=document.getElementById('pagesWrap').getBoundingClientRect();
+    const contRect=container.getBoundingClientRect();
+    scroll.scrollTop=contRect.top-wrapRect.top+(q.cropY1||0)-80;
+  }
+}
+
+// ── ANS KEY ───────────────────────────────────────────────────────────────
+function goToAnsKey(){
+  const done=questions.filter(q=>q.cropped).length;
+  if(!done){toast('Crop at least one question first','err');return}
+  const exam=EXAMS[selectedExam];
+  const total=questions.length;
+  let subjSummary;
+  if(selectedExam==='JEE_ADV'){
+    subjSummary=exam.subjects.map(s=>s.name+': '+s.sections.map(sec=>sec.name+' ('+sec.count+' Qs, +'+sec.mCor+'/−'+sec.mNeg+')').join(', ')).join('\n');
+  } else {
+    subjSummary=exam.subjects.map(s=>s.name+' ('+s.count+' Qs, +'+s.mCor+'/−'+s.mNeg+')').join(', ');
+  }
+  const prompt=`I have a ${exam.label} answer key PDF.\n\nExtract all correct answers and return ONLY a JSON object:\n{"1": "A", "2": "C", "3": "B", ...}\n\nRules:\n- Keys = question numbers (1 to ${total})\n- Values = A, B, C, or D for MCQ; actual number for integer type; comma-separated for MSQ (e.g. "A,C")\n- NO explanation, just the raw JSON object\n- Total questions: ${total}\n- Subjects: ${subjSummary}\n\nReturn ONLY the JSON, nothing else.`;
+  const box=document.getElementById('aiPrompt');
+  box.textContent=prompt;
+  const btn=document.createElement('button');
+  btn.className='copy-btn';btn.textContent='Copy';btn.onclick=copyPrompt;
+  box.prepend(btn);
+  goStep(3);
+}
+
+function copyPrompt(){
+  const t=document.getElementById('aiPrompt').textContent.replace('Copy','').trim();
+  navigator.clipboard.writeText(t).then(()=>toast('Prompt copied!','ok'));
+}
+
+function validateAnsKey(){
+  const val=document.getElementById('ankInput').value.trim();
+  const msg=document.getElementById('validMsg');
+  const preview=document.getElementById('ankPreview');
+  if(!val){msg.className='vm';preview.innerHTML='';return}
+  try{
+    const m=val.match(/\{[\s\S]*\}/);
+    if(!m)throw new Error('No JSON found');
+    answerKey=JSON.parse(m[0]);
+    const n=Object.keys(answerKey).length;
+    msg.className='vm ok';msg.textContent=`✓ Valid! ${n} answers parsed`;
+    preview.innerHTML='';
+    questions.forEach(q=>{
+      const ans=answerKey[String(q.qnum)]||answerKey[q.qnum];
+      const el=document.createElement('div');
+      el.className='aki'+(ans?'':' miss');
+      el.innerHTML=`<span class="qn">Q${q.qnum}</span><span class="ans">${ans||'?'}</span>`;
+      preview.appendChild(el);
+    });
+  }catch(e){msg.className='vm err';msg.textContent='✗ '+e.message;preview.innerHTML='';answerKey={}}
+}
+
+// ── EXPORT ────────────────────────────────────────────────────────────────
+function goToExport(){
+  const exam=EXAMS[selectedExam];
+  const done=questions.filter(q=>q.cropped).length;
+  document.getElementById('expStats').innerHTML=`
+    <div class="stat-box"><div class="stat-n">${done}</div><div class="stat-l">Questions</div></div>
+    <div class="stat-box"><div class="stat-n">${Object.keys(answerKey).length}</div><div class="stat-l">Answers</div></div>
+    <div class="stat-box"><div class="stat-n">${exam.dur}m</div><div class="stat-l">Duration</div></div>`;
+  goStep(4);
+}
+
+function buildJSON(){
+  const exam=EXAMS[selectedExam];
+  const title=document.getElementById('testTitle').value.trim()||exam.label+' Test';
+  return {
+    title,subject:selectedExam,examType:selectedExam,
+    dur:exam.dur,paper:exam.paper||1,
+    subjects:exam.subjects,
+    questions:questions.filter(q=>q.cropped).map(q=>({
+      qnum:q.qnum,subject:q.subject,section:q.section||null,
+      type:q.type||'MCQ',opts:['A','B','C','D'],
+      mCor:q.mCor,mNeg:q.mNeg,
+      ans:answerKey[String(q.qnum)]||answerKey[q.qnum]||'',
+      images:q.imageData?[q.imageData]:[],isBonus:q.isBonus||false
+    }))
+  };
+}
+
+function dlJSON(){
+  const d=buildJSON();
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(d)],{type:'application/json'}));
+  a.download=(d.title||'test').replace(/\s+/g,'-')+'.json';
+  a.click();toast('JSON downloaded!','ok');
+}
+
+async function dlZIP(){
+  const d=buildJSON();
+  const title=d.title.replace(/\s+/g,'-');
+  const zip=new JSZip();
+  zip.file(title+'.json',JSON.stringify(d));
+  if(originalPdfBytes)zip.file('questions.pdf',originalPdfBytes);
+  zip.file('info.json',JSON.stringify({testTitle:d.title,examType:selectedExam,paper:d.paper,total:d.questions.length,generatedAt:new Date().toISOString()},null,2));
+  const blob=await zip.generateAsync({type:'blob'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download=title+'_package.zip';a.click();
+  toast('ZIP downloaded!','ok');
+}
+
+function startOver(){
+  pdfDoc=null;zoom=1.0;questions=[];activeQ=0;answerKey={};originalPdfBytes=null;
+  renderedPages={};guideLines=[];vGuideLines=[];undoStack=[];
+  document.getElementById('dropTitle').textContent='Drop question paper PDF here';
+  document.getElementById('dropSub').textContent='or click to browse';
+  document.getElementById('dropzone').classList.remove('loaded');
+  document.getElementById('pdfInput').value='';
+  document.getElementById('testTitle').value='';
+  document.getElementById('ankInput').value='';
+  document.getElementById('pagesWrap').innerHTML='';
+  document.getElementById('undoBtn').disabled=true;
+  goStep(1);
+}
+
+// ── NAV ───────────────────────────────────────────────────────────────────
+function goStep(n){
+  document.querySelectorAll('.page').forEach((p,i)=>p.classList.toggle('active',i+1===n));
+  document.querySelectorAll('.step').forEach((s,i)=>{
+    s.classList.remove('active','done');
+    if(i+1===n)s.classList.add('active');
+    else if(i+1<n)s.classList.add('done');
+  });
+}
+
+// ── PREVIEW MODAL ───────────────────────────────────────────────────────
+let previewQIdx = -1;
+function openPreview(qIdx){
+  previewQIdx = qIdx;
+  showPreviewAt(qIdx);
+  document.getElementById('previewModal').classList.remove('hidden');
+}
+function showPreviewAt(idx){
+  const q = questions[idx];
+  if(!q || !q.imageData) return;
+  previewQIdx = idx;
+  document.getElementById('previewImg').src = 'data:image/png;base64,' + q.imageData;
+  document.getElementById('previewTitle').textContent = `Q${q.qnum} — ${q.subject}${q.section ? ' · ' + q.section : ''} (+${q.mCor}/−${q.mNeg})`;
+}
+function previewNav(dir){
+  const cropped = questions.map((q,i)=>q.imageData?i:-1).filter(i=>i!==-1);
+  const pos = cropped.indexOf(previewQIdx);
+  const next = cropped[(pos + dir + cropped.length) % cropped.length];
+  if(next !== undefined) showPreviewAt(next);
+}
+function closePreview(){ document.getElementById('previewModal').classList.add('hidden'); }
+document.addEventListener('keydown', e=>{
+  if(!document.getElementById('previewModal').classList.contains('hidden')){
+    if(e.key==='ArrowRight') previewNav(1);
+    if(e.key==='ArrowLeft') previewNav(-1);
+    if(e.key==='Escape') closePreview();
+  }
+});
+
+// ── CLONE GRID TO ALL PAGES ──────────────────────────────────────────────
+function cloneLinesToAllPages(){
+  if(!Object.keys(renderedPages).length){ toast('No pages rendered','err'); return; }
+  // Find source page — prefer page with most lines, else page 1
+  const pageCounts = {};
+  [...guideLines,...vGuideLines].forEach(g=>{ pageCounts[g.pageNum]=(pageCounts[g.pageNum]||0)+1; });
+  if(!Object.keys(pageCounts).length){ toast('Place some lines first on a page','err'); return; }
+  const srcPage = parseInt(Object.entries(pageCounts).sort((a,b)=>b[1]-a[1])[0][0]);
+  const srcVLines = vGuideLines.filter(g=>g.pageNum===srcPage);
+  const srcHLines = guideLines.filter(g=>g.pageNum===srcPage);
+  if(!srcVLines.length && !srcHLines.length){ toast('No lines on source page','err'); return; }
+
+  let added = 0;
+  Object.keys(renderedPages).forEach(pn=>{
+    const p = parseInt(pn);
+    if(p === srcPage) return;
+    srcVLines.forEach(g=>{ addVGuideAt(p, g.xRatio, true); added++; });
+    srcHLines.forEach(g=>{
+      const pr = renderedPages[p];
+      const midX = g.colX1Ratio*pr.width + 1;
+      addGuideAt(p, g.yRatio, true, midX);
+      added++;
+    });
+  });
+  toast(`Grid cloned to ${Object.keys(renderedPages).length-1} other pages (${added} lines)`, 'ok');
+}
+
+// ── BULK CROP ────────────────────────────────────────────────────────────
+let bulkPlan = [];
+function openBulkCrop(){
+  // Build plan: collect all zones across all pages, sorted by page then column then y
+  const zones = [];
+  // Group H-lines by page+col
+  const byCol = {};
+  guideLines.forEach(g=>{
+    const pr = renderedPages[g.pageNum]; if(!pr) return;
+    const cx1 = Math.round(g.colX1Ratio*pr.width);
+    const cx2 = Math.round(g.colX2Ratio*pr.width);
+    const key = `${g.pageNum}|${cx1}|${cx2}`;
+    if(!byCol[key]) byCol[key]={pageNum:g.pageNum,cx1,cx2,lines:[]};
+    byCol[key].lines.push(g);
+  });
+  Object.values(byCol).forEach(({pageNum,cx1,cx2,lines})=>{
+    const sorted=[...lines].sort((a,b)=>a.y-b.y);
+    for(let i=0;i<sorted.length-1;i++){
+      zones.push({pageNum, y1:sorted[i].y, y2:sorted[i+1].y, cx1, cx2});
+    }
+  });
+  zones.sort((a,b)=> a.pageNum!==b.pageNum ? a.pageNum-b.pageNum : a.cx1!==b.cx1 ? a.cx1-b.cx1 : a.y1-b.y1);
+
+  if(!zones.length){ toast('No zones found — add H-lines first','err'); return; }
+
+  // Map zones to questions starting from activeQ
+  const uncroppedFrom = [];
+  for(let i=activeQ; i<questions.length; i++) uncroppedFrom.push(i);
+  for(let i=0; i<activeQ; i++) uncroppedFrom.push(i);
+
+  bulkPlan = zones.map((zone,i)=>({
+    zone, qIdx: uncroppedFrom[i] !== undefined ? uncroppedFrom[i] : null
+  })).filter(p=>p.qIdx!==null);
+
+  const preview = document.getElementById('bulkPreview');
+  preview.innerHTML = bulkPlan.map(p=>{
+    const q = questions[p.qIdx];
+    return `<span style="color:var(--muted)">Zone p${p.zone.pageNum} y${Math.round(p.zone.y1)}–${Math.round(p.zone.y2)}</span> → <span style="color:var(--acc)">Q${q.qnum} ${q.subject}</span>`;
+  }).join('<br>');
+
+  document.getElementById('bulkModal').classList.remove('hidden');
+}
+
+function executeBulkCrop(){
+  bulkPlan.forEach(({zone,qIdx})=>{
+    const q = questions[qIdx];
+    const pr = renderedPages[zone.pageNum]; if(!pr) return;
+    const canvas = pr.canvas, dpr = window.devicePixelRatio;
+    const w = zone.cx2-zone.cx1, h = zone.y2-zone.y1;
+    if(w<4||h<4) return;
+    const tmp = document.createElement('canvas');
+    tmp.width = w*dpr; tmp.height = h*dpr;
+    tmp.getContext('2d').drawImage(canvas, zone.cx1*dpr, zone.y1*dpr, w*dpr, h*dpr, 0,0, w*dpr, h*dpr);
+    q.imageData = tmp.toDataURL('image/png').split(',')[1];
+    q.cropped = true; q.cropPageNum = zone.pageNum;
+    q.cropY1 = zone.y1; q.cropY2 = zone.y2; q.cropX1 = zone.cx1; q.cropX2 = zone.cx2;
+  });
+  document.getElementById('bulkModal').classList.add('hidden');
+  renderAllCroppedOverlays(); updateQPanel();
+  const bar = document.getElementById('bulkBar');
+  bar.textContent = `⚡ ${bulkPlan.length} zones auto-assigned`;
+  bar.classList.add('show');
+  setTimeout(()=>bar.classList.remove('show'), 4000);
+  toast(`⚡ Bulk: ${bulkPlan.length} questions cropped!`, 'ok');
+  bulkPlan = [];
+}
+
+// ── AUTO-ADVANCE COLUMN ──────────────────────────────────────────────────
+// After cropping, if next uncropped Q is in a different column context, scroll to show it
+// (handled naturally via setActiveQ scroll — but we also auto-switch subject tab if needed)
+function autoAdvanceTab(newQ){
+  const subj = newQ.subject;
+  const tabs = document.querySelectorAll('.stab');
+  tabs.forEach(t=>{ if(t.dataset.s===subj){ t.click(); } });
+}
+
+// ── DRAG REORDER ─────────────────────────────────────────────────────────
+let dragSrcIdx = null;
+function renderQList(subj){
+  const list = document.getElementById('qList');
+  list.innerHTML = '';
+  const qs = subj ? questions.filter(q=>q.subject===subj) : questions;
+  qs.forEach(q=>{
+    const idx = questions.indexOf(q);
+    const el = document.createElement('div');
+    el.className = `qi${q.cropped?' done':''}${idx===activeQ?' active':''}${q._qcWarn?' warn-crop':''}${q.multiPage?' multi-page':''}`;
+    el.draggable = true;
+    el.dataset.qidx = idx;
+    const secTag = q.section ? `<span style="font-size:.58rem;color:var(--warn);font-family:'DM Mono',monospace;display:block">${q.section}</span>` : '';
+    const markTag = `<span style="font-size:.58rem;color:var(--muted);font-family:'DM Mono',monospace">+${q.mCor}/−${q.mNeg}</span>`;
+    const thumbHtml = q.imageData
+      ? `<div class="qi-thumb" style="cursor:zoom-in" onclick="event.stopPropagation();openPreview(${idx})"><img src="data:image/png;base64,${q.imageData}"/></div>`
+      : '';
+    el.innerHTML = `<div class="qi-drag-handle" title="Drag to reorder">⠿</div><div class="qi-dot">${q.qnum}</div><div class="qi-info"><div class="qi-name">Q${q.qnum} — ${q.subject}</div><div class="qi-sub">${secTag}${markTag}${q.cropped?' · ✓':''}</div></div>${thumbHtml}`;
+    el.onclick = ()=>setActiveQ(idx);
+
+    // Drag events
+    el.addEventListener('dragstart', e=>{ dragSrcIdx=idx; el.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; });
+    el.addEventListener('dragend', ()=>{ el.classList.remove('dragging'); document.querySelectorAll('.qi.drag-over').forEach(x=>x.classList.remove('drag-over')); });
+    el.addEventListener('dragover', e=>{ e.preventDefault(); e.dataTransfer.dropEffect='move'; el.classList.add('drag-over'); });
+    el.addEventListener('dragleave', ()=>el.classList.remove('drag-over'));
+    el.addEventListener('drop', e=>{
+      e.preventDefault(); el.classList.remove('drag-over');
+      if(dragSrcIdx===null||dragSrcIdx===idx) return;
+      // Reorder questions array
+      const [moved] = questions.splice(dragSrcIdx,1);
+      questions.splice(idx,0,moved);
+      // Renumber qnum
+      questions.forEach((q,i)=>q.qnum=i+1);
+      dragSrcIdx=null;
+      renderAllCroppedOverlays();
+      updateQPanel();
+      toast(`Reordered! Q positions updated`,'ok');
+    });
+    list.appendChild(el);
+  });
+}
+
+// ── SESSION SAVE / RESTORE ──────────────────────────────────────────────
+function saveSession(){
+  if(!questions.length){ toast('Nothing to save yet','err'); return; }
+  const session = {
+    v: 2,
+    title: document.getElementById('testTitle').value,
+    selectedExam, zoom,
+    questions: questions.map(q=>({...q, imageData: q.imageData||null})),
+    guideLines: guideLines.map(g=>({pageNum:g.pageNum,yRatio:g.yRatio,colX1Ratio:g.colX1Ratio,colX2Ratio:g.colX2Ratio})),
+    vGuideLines: vGuideLines.map(g=>({pageNum:g.pageNum,xRatio:g.xRatio})),
+    answerKey, activeQ,
+    examConfig: EXAMS[selectedExam]
+  };
+  const blob = new Blob([JSON.stringify(session)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (session.title||'session').replace(/\s+/g,'-') + '.karle.json';
+  a.click();
+  toast('Session saved!','ok');
+}
+
+async function loadSession(e){
+  const file = e.target.files[0]; if(!file) return;
+  try {
+    const text = await file.text();
+    const s = JSON.parse(text);
+    if(!s.v || !s.questions){ toast('Invalid session file','err'); return; }
+    // Restore exam config
+    if(s.examConfig) EXAMS[s.selectedExam] = s.examConfig;
+    selectedExam = s.selectedExam||'BITSAT';
+    buildExamGrid();
+    document.getElementById('testTitle').value = s.title||'';
+    questions = s.questions;
+    answerKey = s.answerKey||{};
+    activeQ = s.activeQ||0;
+    zoom = s.zoom||1;
+    document.getElementById('zoomLabel').textContent = Math.round(zoom*100)+'%';
+    // Need PDF still — check if loaded
+    if(!pdfDoc){ toast('Session loaded! Now upload the PDF to see lines.','info'); goStep(2); buildQPanel(); return; }
+    renderedPages={}; guideLines=[]; vGuideLines=[];
+    await renderAllPages();
+    s.vGuideLines.forEach(g=>{ if(renderedPages[g.pageNum]) addVGuideAt(g.pageNum,g.xRatio,true); });
+    s.guideLines.forEach(g=>{
+      if(!renderedPages[g.pageNum]) return;
+      const pr=renderedPages[g.pageNum];
+      const midX=(g.colX1Ratio+g.colX2Ratio)/2*pr.width;
+      addGuideAt(g.pageNum,g.yRatio,true,midX);
+    });
+    renderAllCroppedOverlays(); buildQPanel(); setActiveQ(activeQ);
+    goStep(2);
+    toast(`Session restored! ${questions.filter(q=>q.cropped).length}/${questions.length} crops loaded`,'ok');
+  } catch(err){ toast('Failed to load session: '+err.message,'err'); }
+  e.target.value='';
+}
+
+// ── KEYBOARD SHORTCUTS ───────────────────────────────────────────────────
+let kbHintVisible = false;
+function showKbHelp(){
+  kbHintVisible = !kbHintVisible;
+  document.getElementById('kbHint').classList.toggle('show', kbHintVisible);
+}
+
+document.addEventListener('keydown', e=>{
+  // Don't fire when typing in inputs/textareas
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+  // Don't fire when a modal is open
+  const modalsOpen = ['previewModal','qcModal','multiPageModal','bulkModal','examEditModal','customSetupModal','advSetupModal']
+    .some(id=>!document.getElementById(id)?.classList.contains('hidden'));
+  if(modalsOpen) return;
+  // Only when on page 2
+  if(!document.getElementById('page2').classList.contains('active')) return;
+
+  switch(e.key){
+    case '1': setMode('box'); break;
+    case '2': setMode('vline'); break;
+    case '3': setMode('line'); break;
+    case '4': setMode('move'); break;
+    case 'ArrowRight': case 'n':
+      e.preventDefault();
+      if(activeQ < questions.length-1) setActiveQ(activeQ+1);
+      break;
+    case 'ArrowLeft': case 'p':
+      e.preventDefault();
+      if(activeQ > 0) setActiveQ(activeQ-1);
+      break;
+    case ' ':
+      e.preventDefault();
+      // Confirm current box crop if dragging is done
+      if(activeCropBox && !boxDragging){
+        const w=Math.abs(boxCurrent.x-boxStart.x), h=Math.abs(boxCurrent.y-boxStart.y);
+        if(w>10&&h>10) captureCrop();
+      }
+      break;
+    case 'u': case 'U': doUndo(); break;
+    case 'P': case 'p':
+      if(questions[activeQ]?.imageData) openPreview(activeQ);
+      break;
+    case '?': showKbHelp(); break;
+    case 'Escape':
+      if(activeCropBox){ activeCropBox.div.remove(); activeCropBox=null; }
+      break;
+  }
+});
+
+// ── CROP QUALITY CHECKER ─────────────────────────────────────────────────
+function runQualityCheck(){
+  if(!questions.some(q=>q.cropped)){ toast('No crops yet to check','err'); return; }
+  const issues = [];
+  questions.forEach((q,i)=>{
+    if(!q.cropped||!q.imageData) return;
+    const w = (q.cropX2||0)-(q.cropX1||0);
+    const h = (q.cropY2||0)-(q.cropY1||0);
+    const flags = [];
+    if(w<60) flags.push('Very narrow ('+Math.round(w)+'px)');
+    if(h<30) flags.push('Very short ('+Math.round(h)+'px)');
+    if(h>600) flags.push('Very tall — may span too much ('+Math.round(h)+'px)');
+    // Aspect ratio check — questions shouldn't be square (that's usually just options)
+    if(w>0&&h/w<0.08) flags.push('Suspiciously wide/short');
+    // Check imageData length as proxy for blank/white image
+    if(q.imageData.length < 200) flags.push('Image too small — possibly blank');
+    if(flags.length){
+      issues.push({q,idx:i,flags});
+      q._qcWarn = true;
+    } else {
+      q._qcWarn = false;
+    }
+  });
+  // Update Q panel dots
+  updateQPanel();
+  const modal = document.getElementById('qcModal');
+  const results = document.getElementById('qcResults');
+  if(!issues.length){
+    results.innerHTML = '<div style="color:var(--acc);padding:12px;text-align:center;font-size:.84rem">✓ All crops look good!</div>';
+  } else {
+    results.innerHTML = issues.map(({q,idx,flags})=>`
+      <div style="background:var(--s2);border-radius:8px;padding:10px 12px;margin-bottom:8px;cursor:pointer;border:1px solid rgba(245,158,11,.2)"
+           onclick="document.getElementById('qcModal').classList.add('hidden');setActiveQ(${idx})">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+          <span style="color:var(--warn);font-weight:700;font-size:.8rem">⚠ Q${q.qnum}</span>
+          <span style="color:var(--muted);font-size:.7rem">${q.subject}${q.section?' · '+q.section:''}</span>
+        </div>
+        <div style="font-size:.7rem;color:var(--text)">${flags.map(f=>'• '+f).join('<br>')}</div>
+      </div>`).join('');
+  }
+  modal.classList.remove('hidden');
+  toast(`QC: ${issues.length} issue${issues.length===1?'':'s'} found`,(issues.length?'err':'ok'));
+}
+
+// ── MULTI-PAGE QUESTION LINK ─────────────────────────────────────────────
+let multiPageMode = false;
+let multiPageSecondCrop = null;
+
+function openMultiPageLink(){
+  const q = questions[activeQ];
+  if(!q){ toast('Select a question first','err'); return; }
+  multiPageMode = true;
+  multiPageSecondCrop = null;
+  const info = document.getElementById('multiPageActiveInfo');
+  info.innerHTML = `Linking continuation for: <b style="color:var(--acc)">Q${q.qnum} — ${q.subject}</b>${q.cropped?' (already has a crop — second crop will be appended below)':' (no first crop yet — drag one first)'}`;
+  document.getElementById('multiPagePreview').innerHTML = 'No second crop yet — drag a box on the PDF';
+  document.getElementById('multiPageLinkBtn').disabled = true;
+  document.getElementById('multiPageModal').classList.remove('hidden');
+  setMode('box');
+  toast('Drag to select the continuation region on any page','info');
+}
+
+function cancelMultiPage(){
+  multiPageMode = false;
+  multiPageSecondCrop = null;
+  document.getElementById('multiPageModal').classList.add('hidden');
+}
+
+function confirmMultiPage(){
+  if(!multiPageSecondCrop){ toast('Drag a box first','err'); return; }
+  const q = questions[activeQ];
+  const {canvas, dpr, x, y, w, h, pageNum} = multiPageSecondCrop;
+  // Capture second crop
+  const tmp2 = document.createElement('canvas');
+  tmp2.width = w*dpr; tmp2.height = h*dpr;
+  tmp2.getContext('2d').drawImage(canvas, x*dpr, y*dpr, w*dpr, h*dpr, 0,0, w*dpr, h*dpr);
+  const img2 = tmp2.toDataURL('image/png').split(',')[1];
+
+  if(q.cropped && q.imageData){
+    // Combine vertically: decode both, draw on tall canvas
+    const i1 = new Image(), i2 = new Image();
+    i1.onload = ()=>{
+      i2.onload = ()=>{
+        const combined = document.createElement('canvas');
+        combined.width = Math.max(i1.width, i2.width);
+        combined.height = i1.height + i2.height + 8;
+        const ctx = combined.getContext('2d');
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0,0,combined.width,combined.height);
+        ctx.drawImage(i1, 0, 0);
+        ctx.drawImage(i2, 0, i1.height+8);
+        q.imageData = combined.toDataURL('image/png').split(',')[1];
+        q.multiPage = true;
+        cancelMultiPage();
+        renderAllCroppedOverlays(); updateQPanel();
+        toast(`Q${q.qnum} now spans 2 pages — images combined!`,'ok');
+      };
+      i2.src = 'data:image/png;base64,'+img2;
+    };
+    i1.src = 'data:image/png;base64,'+q.imageData;
+  } else {
+    // No first crop — use second crop as main
+    q.imageData = img2;
+    q.cropped = true; q.cropPageNum = pageNum;
+    q.cropY1 = y; q.cropY2 = y+h; q.cropX1 = x; q.cropX2 = x+w;
+    q.multiPage = true;
+    cancelMultiPage();
+    renderAllCroppedOverlays(); updateQPanel();
+    toast(`Q${q.qnum} first crop set from multi-page link`,'ok');
+  }
+}
+
+// Hook into captureCrop to intercept multi-page mode
+const _origCaptureCrop = captureCrop;
+function captureCrop(){
+  if(multiPageMode){
+    // Store second crop info instead of assigning to question
+    const pr = renderedPages[boxPageNum];
+    if(!pr) return;
+    const x=Math.min(boxStart.x,boxCurrent.x), y=Math.min(boxStart.y,boxCurrent.y);
+    const w=Math.abs(boxCurrent.x-boxStart.x), h=Math.abs(boxCurrent.y-boxStart.y);
+    if(w<10||h<10) return;
+    multiPageSecondCrop = {canvas:pr.canvas, dpr:window.devicePixelRatio, x,y,w,h, pageNum:boxPageNum};
+    // Show preview
+    const tmp = document.createElement('canvas');
+    tmp.width=w; tmp.height=h;
+    tmp.getContext('2d').drawImage(pr.canvas, x*window.devicePixelRatio, y*window.devicePixelRatio, w*window.devicePixelRatio, h*window.devicePixelRatio, 0,0,w,h);
+    const prev = document.getElementById('multiPagePreview');
+    prev.innerHTML = `<img src="${tmp.toDataURL()}" style="max-width:100%;max-height:120px;border-radius:4px"/>`;
+    document.getElementById('multiPageLinkBtn').disabled = false;
+    if(activeCropBox&&activeCropBox.div.parentElement)activeCropBox.div.remove();
+    activeCropBox=null;
+    return;
+  }
+  _origCaptureCrop();
+}
+
+// ── ANSWER KEY PDF AUTO-EXTRACT ──────────────────────────────────────────
+async function extractAnswersFromPDF(e){
+  const file = e.target.files[0]; if(!file) return;
+  const buf = await file.arrayBuffer();
+  try {
+    const pdf = await pdfjsLib.getDocument({data: new Uint8Array(buf)}).promise;
+    let fullText = '';
+    for(let p=1;p<=pdf.numPages;p++){
+      const page = await pdf.getPage(p);
+      const tc = await page.getTextContent();
+      fullText += tc.items.map(i=>i.str).join(' ') + '
+';
+    }
+    // Parse patterns: "1. A", "1) B", "1 - C", "Q1 D", "(1) A", etc.
+    const matches = {};
+    const patterns = [
+      /\b(\d{1,3})[.):\-]\s*([A-Da-d])\b/g,
+      /\bQ(\d{1,3})\s*[.):\-]?\s*([A-Da-d])\b/gi,
+      /\((\d{1,3})\)\s*([A-Da-d])\b/g,
+    ];
+    patterns.forEach(re=>{
+      let m;
+      while((m=re.exec(fullText))!==null){
+        const n=parseInt(m[1]), ans=m[2].toUpperCase();
+        if(n>=1&&n<=questions.length&&!matches[n]) matches[n]=ans;
+      }
+    });
+    if(!Object.keys(matches).length){
+      toast('No answers detected — try manual paste below','err');
+      return;
+    }
+    answerKey = Object.fromEntries(Object.entries(matches).map(([k,v])=>[String(k),v]));
+    document.getElementById('ankInput').value = JSON.stringify(answerKey, null, 2);
+    validateAnsKey();
+    document.getElementById('akDropTitle').textContent = `✓ Extracted ${Object.keys(matches).length} answers from ${file.name}`;
+    document.getElementById('akDrop').classList.add('loaded');
+    toast(`Extracted ${Object.keys(matches).length} answers from PDF!`,'ok');
+  } catch(err){ toast('PDF extract failed: '+err.message,'err'); }
+  e.target.value='';
+}
+
+// Setup AK PDF drop zone
+(function setupAKDrop(){
+  const dz = document.getElementById('akDrop');
+  if(!dz) return;
+  dz.ondragover = e=>{ e.preventDefault(); dz.classList.add('drag'); };
+  dz.ondragleave = ()=>dz.classList.remove('drag');
+  dz.ondrop = e=>{ e.preventDefault(); dz.classList.remove('drag'); 
+    const file = e.dataTransfer.files[0]; if(file){ 
+      const inp = document.getElementById('akPdfInput');
+      // Simulate file input change
+      const dt = new DataTransfer(); dt.items.add(file);
+      inp.files = dt.files;
+      extractAnswersFromPDF({target:inp});
+    }
+  };
+})();
+
+// ── TOAST ─────────────────────────────────────────────────────────────────
+function toast(msg,type='ok'){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.className='toast show '+type;
+  clearTimeout(el._t);el._t=setTimeout(()=>el.className='toast',3000);
+}
+</script>
+
+<!-- KEYBOARD HINTS -->
+<div class="kb-hint" id="kbHint">
+  <span class="kb-key">1</span>Box &nbsp;
+  <span class="kb-key">2</span>Boundary &nbsp;
+  <span class="kb-key">3</span>H-Lines &nbsp;
+  <span class="kb-key">4</span>Move &nbsp;
+  <span class="kb-key">Space</span>Confirm crop &nbsp;
+  <span class="kb-key">→</span>Next Q &nbsp;
+  <span class="kb-key">←</span>Prev Q &nbsp;
+  <span class="kb-key">U</span>Undo &nbsp;
+  <span class="kb-key">D</span>Del line &nbsp;
+  <span class="kb-key">P</span>Preview &nbsp;
+  <span class="kb-key">?</span>Toggle
+</div>
+
+<!-- QC RESULTS MODAL -->
+<div class="modal-overlay hidden" id="qcModal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-title">🔍 Crop Quality Report</div>
+    <div class="modal-sub">Questions flagged for potential issues. Click any to jump to it.</div>
+    <div id="qcResults" style="max-height:320px;overflow-y:auto"></div>
+    <div class="modal-btns">
+      <button class="btn btn-out" onclick="document.getElementById('qcModal').classList.add('hidden')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- MULTI-PAGE LINK MODAL -->
+<div class="modal-overlay hidden" id="multiPageModal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-title">🔗 Multi-Page Question</div>
+    <div class="modal-sub">Link a second crop (e.g. options on next page) to the active question. Both crops will be combined vertically into one image.</div>
+    <div style="background:var(--s2);border-radius:8px;padding:10px 12px;font-size:.78rem;margin-bottom:14px" id="multiPageActiveInfo"></div>
+    <div style="font-size:.72rem;color:var(--muted);margin-bottom:8px">Drag a box on the PDF around the continuation, then click Link:</div>
+    <div id="multiPagePreview" style="min-height:40px;background:var(--s2);border-radius:8px;margin-bottom:12px;display:flex;align-items:center;justify-content:center;font-size:.72rem;color:var(--muted)">No second crop yet — drag a box on the PDF</div>
+    <div class="modal-btns">
+      <button class="btn btn-out" onclick="cancelMultiPage()">Cancel</button>
+      <button class="btn btn-blue" id="multiPageLinkBtn" onclick="confirmMultiPage()" disabled>Link & Combine →</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
