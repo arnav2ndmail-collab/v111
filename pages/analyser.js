@@ -19,11 +19,16 @@ const Ic = {
 }
 
 const SUBJ_ORDER = ['Physics','Chemistry','Maths','English & LR','Bonus']
+const SUBJ_ORDER = ['Physics','Chemistry','Maths','Biology','English & LR','Aptitude','Reasoning','General','Bonus']
 const SC = {
   'Physics':      { bg:'#1565c0', grd:'linear-gradient(135deg,#1565c0,#1e88e5)', light:'#e3f2fd', dot:'#42a5f5', label:'PHY' },
   'Chemistry':    { bg:'#2e7d32', grd:'linear-gradient(135deg,#2e7d32,#43a047)', light:'#e8f5e9', dot:'#66bb6a', label:'CHEM' },
   'Maths':        { bg:'#c62828', grd:'linear-gradient(135deg,#c62828,#e53935)', light:'#ffebee', dot:'#ef5350', label:'MATH' },
+  'Biology':      { bg:'#00695c', grd:'linear-gradient(135deg,#00695c,#00897b)', light:'#e0f2f1', dot:'#26a69a', label:'BIO'  },
   'English & LR': { bg:'#6a1b9a', grd:'linear-gradient(135deg,#6a1b9a,#8e24aa)', light:'#f3e5f5', dot:'#ab47bc', label:'ENG'  },
+  'Aptitude':     { bg:'#1565c0', grd:'linear-gradient(135deg,#1565c0,#1976d2)', light:'#e3f2fd', dot:'#64b5f6', label:'APT'  },
+  'Reasoning':    { bg:'#4527a0', grd:'linear-gradient(135deg,#4527a0,#5e35b1)', light:'#ede7f6', dot:'#9575cd', label:'RSN'  },
+  'General':      { bg:'#37474f', grd:'linear-gradient(135deg,#37474f,#546e7a)', light:'#eceff1', dot:'#78909c', label:'GEN'  },
   'Bonus':        { bg:'#e65100', grd:'linear-gradient(135deg,#e65100,#f57c00)', light:'#fff3e0', dot:'#ffa726', label:'BON'  },
 }
 const getSC = s => SC[s] || { bg:'#37474f', grd:'linear-gradient(135deg,#37474f,#546e7a)', light:'#eceff1', dot:'#78909c', label:'Q' }
@@ -145,7 +150,7 @@ export default function Analyser() {
       result: q.result||(!q.yourAnswer?'unattempted':q.yourAnswer==='skip'?'skipped':
         String(q.correctAnswer||'').toUpperCase().trim()===String(q.yourAnswer||'').toUpperCase().trim()?'correct':'wrong')
     }))
-    const first = SUBJ_ORDER.filter(s=>s!=='Bonus').find(s=>d.questions.some(q=>q.subject===s))||d.questions[0]?.subject
+    const first = d.questions.find(q=>q.subject&&q.subject!=='Bonus')?.subject || d.questions[0]?.subject
     setData(d); setActiveSubj(first); setCurQ(0); setFilter('all'); setTab('overview')
   }
 
@@ -293,7 +298,10 @@ export default function Analyser() {
 
   // ── Computed ──────────────────────────────────────────────────────────────
   const allQs    = data.questions
-  const subjects = SUBJ_ORDER.filter(s=>allQs.some(q=>q.subject===s))
+  // Get subjects in order: known ones first (SUBJ_ORDER), then any unknown ones
+  const knownSubjs = SUBJ_ORDER.filter(s=>allQs.some(q=>q.subject===s))
+  const unknownSubjs = [...new Set(allQs.map(q=>q.subject).filter(s=>s&&!SUBJ_ORDER.includes(s)))]
+  const subjects = [...knownSubjs, ...unknownSubjs]
   const getSubjQsArr = s => allQs.filter(q=>q.subject===s)
   const ms = qs=>({ total:qs.length, cor:qs.filter(q=>q.result==='correct').length, wrg:qs.filter(q=>q.result==='wrong').length, skp:qs.filter(q=>q.result==='skipped').length, un:qs.filter(q=>q.result==='unattempted').length })
   const overall  = ms(allQs)

@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import Head from 'next/head'
 import { getSupabase, isSupabaseReady } from '../lib/supabase'
 
-const SUBJECTS = ['Overall','Physics','Chemistry','Maths','English & LR']
+const SUBJ_ORDER_KNOWN = ['Physics','Chemistry','Maths','Biology','English & LR','Aptitude','Reasoning','General']
+const SUBJECTS_BASE = ['Overall','Physics','Chemistry','Maths','Biology','English & LR']
 const SC = {
   Overall:       { c:'#6366f1', ic:'✓'  },
   Physics:       { c:'#10b981', ic:'⚛'  },
@@ -104,7 +105,9 @@ export default function Analytics() {
     } catch(e) { console.warn(e) }
     setLbLoading(false)
   }
-  const stats = (() => {
+  // Dynamic subject list from actual data
+  const allSubjKeys = [...new Set(filtered.flatMap(a => Object.keys(a.subj_stats || {})))]
+  const SUBJECTS = ['Overall', ...SUBJ_ORDER_KNOWN.filter(s=>allSubjKeys.includes(s)), ...allSubjKeys.filter(s=>!SUBJ_ORDER_KNOWN.includes(s))]
     if (!filtered.length) return null
     const n = filtered.length
     const avg = f => Math.round(filtered.reduce((s,a) => s+f(a), 0) / n)
@@ -115,7 +118,7 @@ export default function Analytics() {
       avgWrong:    avg(a => pct(a.wrong, tot(a))),
       avgNA:       avg(a => pct(a.unattempted, tot(a))),
       avgNotVis:   avg(a => pct(a.skipped, tot(a))),
-      subjData: Object.fromEntries(SUBJECTS.filter(s=>s!=='Overall').map(s => {
+      subjData: Object.fromEntries(allSubjKeys.map(s => {
         const rows = filtered.filter(a => a.subj_stats?.[s])
         if (!rows.length) return [s, null]
         const sn = rows.length
