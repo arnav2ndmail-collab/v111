@@ -105,9 +105,13 @@ export default function Analytics() {
     } catch(e) { console.warn(e) }
     setLbLoading(false)
   }
+
   // Dynamic subject list from actual data
   const allSubjKeys = [...new Set(filtered.flatMap(a => Object.keys(a.subj_stats || {})))]
   const SUBJECTS = ['Overall', ...SUBJ_ORDER_KNOWN.filter(s=>allSubjKeys.includes(s)), ...allSubjKeys.filter(s=>!SUBJ_ORDER_KNOWN.includes(s))]
+
+  // ── FIX: was missing "const stats =" ──────────────────────────────────────
+  const stats = (() => {
     if (!filtered.length) return null
     const n = filtered.length
     const avg = f => Math.round(filtered.reduce((s,a) => s+f(a), 0) / n)
@@ -383,7 +387,7 @@ export default function Analytics() {
                         return (
                           <div key={s} className="subject-card">
                             <div className="subject-header">
-                              <span style={{color:SC[s].c,fontSize:18}}>{SC[s].ic}</span>
+                              <span style={{color:SC[s]?.c||'#94a3b8',fontSize:18}}>{SC[s]?.ic||'•'}</span>
                               <span className="subject-name">{s}</span>
                             </div>
                             {d ? <>
@@ -412,7 +416,7 @@ export default function Analytics() {
                     <div className="subject-tabs">
                       {SUBJECTS.map(s=>(
                         <button key={s} className={`subject-tab${activeSubj===s?' active':''}`} onClick={()=>setActiveSubj(s)}>
-                          <span className="subject-icon">{SC[s].ic}</span>
+                          <span className="subject-icon">{SC[s]?.ic||'•'}</span>
                           <span>{s}</span>
                         </button>
                       ))}
@@ -459,7 +463,6 @@ export default function Analytics() {
                         const deleteRow = async () => {
                           if (!confirm('Delete this attempt?')) return
                           setAttempts(prev => prev.filter((_,j) => j!==i))
-                          // Delete from cloud
                           try {
                             const sb = (await import('../lib/supabase')).getSupabase()
                             const { data: { session } } = await sb.auth.getSession()
@@ -503,7 +506,6 @@ export default function Analytics() {
                   {lbTest && (
                     <div onClick={()=>setLbTest(null)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,.7)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
                       <div onClick={e=>e.stopPropagation()} style={{background:'#141927',border:'1px solid #2d3748',borderRadius:18,width:'100%',maxWidth:520,maxHeight:'85vh',display:'flex',flexDirection:'column',overflow:'hidden',boxShadow:'0 24px 80px rgba(0,0,0,.6)'}}>
-                        {/* Modal header */}
                         <div style={{padding:'16px 20px',borderBottom:'1px solid #2d3748',display:'flex',alignItems:'center',gap:12,flexShrink:0}}>
                           <div style={{flex:1,minWidth:0}}>
                             <div style={{fontWeight:800,fontSize:'.92rem',color:'#e2e8f0'}}>🏆 Leaderboard</div>
@@ -511,7 +513,6 @@ export default function Analytics() {
                           </div>
                           <button onClick={()=>setLbTest(null)} style={{background:'transparent',border:'1px solid #2d3748',color:'#64748b',width:30,height:30,borderRadius:7,cursor:'pointer',fontSize:'1rem',display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
                         </div>
-                        {/* My rank banner */}
                         {!lbLoading && lbData?.myRank && (
                           <div style={{padding:'12px 20px',borderBottom:'1px solid #2d3748',background:'rgba(99,102,241,.08)',flexShrink:0,display:'flex',alignItems:'center',gap:12}}>
                             <div style={{fontSize:'1.6rem',fontWeight:900,color:'#6366f1',minWidth:44,textAlign:'center'}}>#{lbData.myRank.rank}</div>
@@ -522,7 +523,6 @@ export default function Analytics() {
                             <div style={{fontSize:'.68rem',color:'#475569',flexShrink:0}}>{lbData.total} took this test</div>
                           </div>
                         )}
-                        {/* Scrollable list */}
                         <div style={{overflowY:'auto',flex:1,padding:'12px 16px',display:'flex',flexDirection:'column',gap:6}}>
                           {lbLoading ? (
                             <div className="state"><div className="spin"/><p>Loading…</p></div>
@@ -577,7 +577,7 @@ export default function Analytics() {
                     </div>
                   </div>
 
-                  {/* Leaderboard tiles — below timeline */}
+                  {/* Leaderboard tiles */}
                   <div className="performance-card animate-in" style={{marginTop:16}}>
                     <h3 className="section-title">🏆 Leaderboard</h3>
                     <p style={{fontSize:'.75rem',color:'#64748b',marginBottom:14}}>Click a test to see how you ranked among all users</p>
@@ -605,7 +605,6 @@ export default function Analytics() {
                 </>
               ) : section==='Leaderboard' ? (
                 <>
-                  {/* Modal */}
                   {lbTest && (
                     <div onClick={()=>setLbTest(null)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,.7)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
                       <div onClick={e=>e.stopPropagation()} style={{background:'#141927',border:'1px solid #2d3748',borderRadius:18,width:'100%',maxWidth:520,maxHeight:'85vh',display:'flex',flexDirection:'column',overflow:'hidden',boxShadow:'0 24px 80px rgba(0,0,0,.6)'}}>
