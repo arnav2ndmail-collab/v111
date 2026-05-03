@@ -73,21 +73,6 @@ export default function SubmitTest() {
                   Once your <code style={{background:'#1e293b',padding:'1px 6px',borderRadius:4,color:'#a5b4fc',fontSize:'.82rem'}}>.json</code> file is ready, send it through any of the channels below. We'll review it and add it to the library for everyone.
                 </p>
                 <div style={{display:'flex',flexDirection:'column',gap:10}}>
-                  {/* Telegram */}
-                  <a href="https://t.me/toopixel" target="_blank" rel="noopener noreferrer"
-                    style={{display:'flex',alignItems:'center',gap:14,background:'#1e293b',border:'1px solid #334155',borderRadius:12,padding:'14px 18px',textDecoration:'none',transition:'border-color .15s'}}
-                    onMouseEnter={e=>e.currentTarget.style.borderColor='#0ea5e9'}
-                    onMouseLeave={e=>e.currentTarget.style.borderColor='#334155'}>
-                    <div style={{width:40,height:40,background:'#0ea5e9',borderRadius:10,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.16 14.26l-2.974-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.002.299z"/></svg>
-                    </div>
-                    <div>
-                      <div style={{fontWeight:700,color:'#e2e8f0',fontSize:'.88rem'}}>Telegram</div>
-                      <div style={{color:'#0ea5e9',fontSize:'.78rem',fontWeight:600}}>@toopixel</div>
-                    </div>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2" style={{marginLeft:'auto'}}><polyline points="9 18 15 12 9 6"/></svg>
-                  </a>
-
                   {/* Reddit */}
                   <a href="https://www.reddit.com/user/AffectionateFloor607/" target="_blank" rel="noopener noreferrer"
                     style={{display:'flex',alignItems:'center',gap:14,background:'#1e293b',border:'1px solid #334155',borderRadius:12,padding:'14px 18px',textDecoration:'none',transition:'border-color .15s'}}
@@ -119,7 +104,6 @@ export default function SubmitTest() {
                     ['✅','Double-check all correct answers before sending'],
                     ['🖼️','Use the builder\'s image upload if questions have diagrams'],
                     ['📂','You can send multiple tests — just zip them and send the folder'],
-                    ['⚡','Telegram is fastest for a response — usually within a day'],
                   ].map(([ic,text],i)=>(
                     <div key={i} style={{display:'flex',gap:10,alignItems:'flex-start'}}>
                       <span style={{fontSize:'.9rem',flexShrink:0,marginTop:1}}>{ic}</span>

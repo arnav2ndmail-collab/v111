@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import Head from 'next/head'
 
 const ADM_KEY = 'tz_adm_tok'
-const SUBJ_ORDER = ['Physics','Chemistry','Maths','Mathematics','English & LR']
+const SUBJ_ORDER = ['Physics','Chemistry','English & LR','Mathematics','Maths','Biology']
 const OPT_MAP = {'1':'A','2':'B','3':'C','4':'D'}
 
 // Normalize subject names so the CBT navigator works correctly
@@ -70,25 +70,16 @@ async function processBitsatZip(file, testName, onProgress) {
   onProgress(`Processing ${Object.keys(imageMap).length} images...`)
 
   const questions = []
-  let globalQnum = 0
-
-  // Build ordered subject list: use DISPLAY_ORDER preference, then any remaining from pcd
+  // Fix subject order: Physics → Chemistry → English & LR → Maths → Biology → others → Bonus
   const pcdSubjects = Object.keys(pcd)
-  const orderedSubjects = [
-    ...DISPLAY_ORDER.filter(s => pcdSubjects.includes(s) || pcdSubjects.includes(Object.keys(SUBJ_NORMALIZE).find(k => SUBJ_NORMALIZE[k]===s))),
-    ...pcdSubjects.filter(s => {
-      const norm = normalizeSubj(s)
-      return !DISPLAY_ORDER.includes(norm) && !DISPLAY_ORDER.includes(s)
-    })
-  ]
-  // Actually just use pcd keys directly in display order — Bonus always last
   const finalOrder = [
-    ...pcdSubjects.filter(s => ['Physics'].includes(s)),
-    ...pcdSubjects.filter(s => ['Chemistry'].includes(s)),
-    ...pcdSubjects.filter(s => ['Maths','Mathematics','Math'].includes(s)),
+    ...pcdSubjects.filter(s => s === 'Physics'),
+    ...pcdSubjects.filter(s => s === 'Chemistry'),
     ...pcdSubjects.filter(s => ['English & LR','English','English & Logical Reasoning'].includes(s)),
-    ...pcdSubjects.filter(s => !['Physics','Chemistry','Maths','Mathematics','Math','English & LR','English','English & Logical Reasoning','Bonus'].includes(s)),
-    ...pcdSubjects.filter(s => ['Bonus'].includes(s)), // Bonus always last
+    ...pcdSubjects.filter(s => ['Maths','Mathematics','Math'].includes(s)),
+    ...pcdSubjects.filter(s => s === 'Biology'),
+    ...pcdSubjects.filter(s => !['Physics','Chemistry','English & LR','English','English & Logical Reasoning','Maths','Mathematics','Math','Biology','Bonus'].includes(s)),
+    ...pcdSubjects.filter(s => s === 'Bonus'),
   ]
 
   for (const subj of finalOrder) {
@@ -100,12 +91,22 @@ async function processBitsatZip(file, testName, onProgress) {
       const ansSection = (ak[subj] || {})[sectionName] || {}
       const sortedKeys = Object.keys(sectionQs).sort((a,b) => parseInt(a)-parseInt(b))
       for (const qnumStr of sortedKeys) {
-        globalQnum++
         const q = sectionQs[qnumStr]
-        const ansNum = String(ansSection[qnumStr] || '')
-        const ansLetter = OPT_MAP[ansNum] || ansNum
 
-        // Collect images: try original subject name AND normalized name
+        // Handle BOTH answer formats:
+        // New: { correctAnswer: [2], type, answerOptions }
+        // Old: "2" or 2 (plain number/string)
+        const ansRaw = ansSection[qnumStr]
+        let ansLetter = ''
+        if (ansRaw !== undefined && ansRaw !== null && ansRaw !== '') {
+          if (typeof ansRaw === 'object' && Array.isArray(ansRaw.correctAnswer)) {
+            ansLetter = OPT_MAP[String(ansRaw.correctAnswer[0])] || String(ansRaw.correctAnswer[0])
+          } else {
+            ansLetter = OPT_MAP[String(ansRaw)] || String(ansRaw)
+          }
+        }
+
+        // Collect images
         const images = []
         for (let i = 1; i <= 10; i++) {
           const key1 = `${subj}__--__${qnumStr}__--__${i}`
@@ -117,14 +118,12 @@ async function processBitsatZip(file, testName, onProgress) {
 
         const numOpts = parseInt(q.answerOptions) || 4
         questions.push({
-          qnum: globalQnum,
+          qnum: parseInt(qnumStr),  // preserve original question number
           subject: isBonus ? 'Bonus' : normalizedSubj,
           isBonus: isBonus || undefined,
           type: q.type === 'mcq' ? 'MCQ' : 'INTEGER',
-          text: `Q${globalQnum}`,
           opts: ['A','B','C','D'].slice(0, numOpts),
           ans: ansLetter,
-          hasImage: images.length > 0,
           images,
           mCor: q.marks?.cm || 3,
           mNeg: Math.abs(q.marks?.im || 1),
@@ -373,6 +372,7 @@ export default function AdminPage() {
   // BITSAT processor
   const [zipFile, setZipFile]     = useState(null)
   const [testName, setTestName]   = useState('')
+  const [folderName, setFolderName] = useState('BITSAT 1')
   const [processing, setProcessing] = useState(false)
   const [progress, setProgress]   = useState('')
   const [result, setResult]       = useState(null)
@@ -466,6 +466,29 @@ export default function AdminPage() {
       flash('❌ '+e.message, false)
     }
     setProcessing(false)
+  }
+
+  const uploadToStorage = async (testData) => {
+    const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    if (!sbUrl) { flash('❌ Supabase URL not set'); return }
+    const folder = folderName.trim() || 'BITSAT 1'
+    const safeName = testName.replace(/[^a-zA-Z0-9_\-\s]/g,'').replace(/\s+/g,'_') || 'test'
+    const storagePath = `${folder}/${safeName}.json`
+    setProgress('Uploading to Supabase Storage…')
+    try {
+      const r = await fetch('/api/admin/upload-to-storage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer '+tok },
+        body: JSON.stringify({ testData, storagePath })
+      })
+      const d = await r.json()
+      if (!r.ok) throw new Error(d.error || 'Upload failed')
+      flash(`✅ Uploaded to tests/${storagePath}`)
+      setResult(prev => prev ? {...prev, uploaded: true, storagePath} : prev)
+    } catch(e) {
+      flash('❌ Upload failed: ' + e.message)
+    }
+    setProgress('')
   }
 
   const downloadJSON = (testData) => {
@@ -581,8 +604,8 @@ export default function AdminPage() {
           {tab==='bitsat' && (
             <div className="section">
               <div className="sec-head">
-                <h1>📦 Add BITSAT Test from ZIP</h1>
-                <p>Upload your BITSAT paper zip — questions & images auto-extracted, download ready JSON</p>
+                <h1>📦 Add Test from ZIP</h1>
+                <p>Upload a paper ZIP — questions & images auto-extracted, then uploaded directly to Supabase Storage</p>
               </div>
 
               {/* Format box */}
@@ -590,10 +613,10 @@ export default function AdminPage() {
                 <div className="fb-title">Expected ZIP structure:</div>
                 <div className="fb-files">
                   <div className="fb-file"><span className="fb-ic">📄</span><div><b>data.json</b><span>pdfCropperData + testAnswerKey</span></div></div>
-                  <div className="fb-file"><span className="fb-ic">🖼️</span><div><b>Subject__--__QNum__--__1.png</b><span>e.g. Maths__--__5__--__1.png</span></div></div>
+                  <div className="fb-file"><span className="fb-ic">🖼️</span><div><b>Subject__--__QNum__--__1.png</b><span>e.g. Physics__--__5__--__1.png</span></div></div>
                 </div>
                 <div className="fb-subjs">
-                  {SUBJ_ORDER.map(s=><span key={s} className="fb-pill">{s}</span>)}
+                  {['Physics','Chemistry','English & LR','Maths','Biology'].map(s=><span key={s} className="fb-pill">{s}</span>)}
                 </div>
               </div>
 
@@ -625,12 +648,16 @@ export default function AdminPage() {
                 <input ref={zipRef} type="file" accept=".zip" style={{display:'none'}} onChange={e=>{const f=e.target.files[0];if(f){setZipFile(f);setResult(null);setTestName(f.name.replace(/\.zip$/i,'').replace(/[-_]/g,' ').trim())}}}/>
               </div>
 
-              {/* Name + Process */}
+              {/* Name + Folder + Process */}
               {zipFile && (
                 <div className="action-row">
                   <div className="field-wrap">
                     <label className="flabel">Test Name</label>
-                    <input className="finput" value={testName} onChange={e=>setTestName(e.target.value)} placeholder="e.g. BITSAT 2024 Paper 11"/>
+                    <input className="finput" value={testName} onChange={e=>setTestName(e.target.value)} placeholder="e.g. BITSAT 1 Mock 11"/>
+                  </div>
+                  <div className="field-wrap" style={{maxWidth:180}}>
+                    <label className="flabel">Folder in Storage</label>
+                    <input className="finput" value={folderName} onChange={e=>setFolderName(e.target.value)} placeholder="e.g. BITSAT 1"/>
                   </div>
                   <button className="proc-btn" onClick={processZip} disabled={processing||!testName.trim()}>
                     {processing ? <><span className="spin"/>Processing…</> : '⚡ Generate JSON'}
@@ -671,12 +698,18 @@ export default function AdminPage() {
                     })}
                   </div>
                   <div className="result-actions">
-                    <button className="dl-btn" onClick={()=>downloadJSON(result.testData)}>
-                      📥 Download JSON File
+                    {!result.uploaded ? (
+                      <button className="proc-btn" onClick={()=>uploadToStorage(result.testData)} style={{background:'linear-gradient(135deg,#1565c0,#1e88e5)'}}>
+                        ☁️ Upload to Supabase Storage
+                      </button>
+                    ) : (
+                      <div style={{background:'#e8f5e9',border:'1px solid #a5d6a7',borderRadius:10,padding:'12px 16px',color:'#2e7d32',fontWeight:700,fontSize:'.88rem'}}>
+                        ✅ Uploaded! Folder: <code style={{background:'rgba(0,0,0,.08)',padding:'2px 6px',borderRadius:4}}>{result.storagePath}</code>
+                      </div>
+                    )}
+                    <button className="dl-btn" onClick={()=>downloadJSON(result.testData)} style={{marginTop:8}}>
+                      📥 Download JSON (backup)
                     </button>
-                    <div className="dl-hint">
-                      Save this file to <code>public/tests/BITSAT/</code> in your GitHub repo → push → test appears in library
-                    </div>
                   </div>
                 </div>
               )}
