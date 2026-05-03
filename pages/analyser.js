@@ -19,7 +19,7 @@ const Ic = {
 }
 
 
-const SUBJ_ORDER = ['Physics','Chemistry','Maths','Biology','English & LR','Aptitude','Reasoning','General','Bonus']
+const SUBJ_ORDER = ['Physics','Chemistry','English & LR','Biology','Maths','Aptitude','Reasoning','General','Bonus']
 const SC = {
   'Physics':      { bg:'#1565c0', grd:'linear-gradient(135deg,#1565c0,#1e88e5)', light:'#e3f2fd', dot:'#42a5f5', label:'PHY' },
   'Chemistry':    { bg:'#2e7d32', grd:'linear-gradient(135deg,#2e7d32,#43a047)', light:'#e8f5e9', dot:'#66bb6a', label:'CHEM' },
