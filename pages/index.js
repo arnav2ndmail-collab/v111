@@ -226,16 +226,26 @@ export default function Karle() {
 
   const isBITSAT = (subj) => (subj||'').toUpperCase().includes('BITSAT')
 
+  const normalizeQuestion = (q) => {
+    const subject = /^mathematics$/i.test(String(q?.subject||'').trim()) ? 'Maths' : (q?.subject || 'Other')
+    return {
+      ...q,
+      subject,
+      isBonus: q?.isBonus === true || /^bonus$/i.test(String(subject).trim())
+    }
+  }
+
   const doLaunch = (qs, c) => {
-    const blankAns = new Array(qs.length).fill(null)
-    setQs(qs); setCfg(c)
+    const normalizedQs = qs.map(normalizeQuestion)
+    const blankAns = new Array(normalizedQs.length).fill(null)
+    setQs(normalizedQs); setCfg(c)
     setAns(blankAns); cbtAns.current = blankAns
-    setMarked(new Array(qs.length).fill(false))
-    setVisited(new Array(qs.length).fill(false))
+    setMarked(new Array(normalizedQs.length).fill(false))
+    setVisited(new Array(normalizedQs.length).fill(false))
     setCur(0); setDone(false); setReviewing(false); setResult(null)
     setSecs(c.dur*60)
-    if (isBITSAT(c.subject||'') || qs.some(q=>q.subject)) {
-      const firstSubj = qs.find(q=>q.subject)?.subject
+    if (isBITSAT(c.subject||'') || normalizedQs.some(q=>q.subject)) {
+      const firstSubj = normalizedQs.find(q=>q.subject && !q.isBonus)?.subject || normalizedQs.find(q=>q.subject)?.subject
       if (firstSubj) setActiveNavSubj(firstSubj)
     } else { setActiveNavSubj(null) }
     setCbtOn(true)
@@ -246,8 +256,8 @@ export default function Karle() {
     // Save tiny resume - testPath is the actual file path for re-fetching
     saveResume({
       testPath: c.testPath || c.id, cfg: c,
-      ans: blankAns, marked: new Array(qs.length).fill(false),
-      visited: new Array(qs.length).fill(false),
+      ans: blankAns, marked: new Array(normalizedQs.length).fill(false),
+      visited: new Array(normalizedQs.length).fill(false),
       cur: 0, elapsed: 0, savedAt: Date.now()
     })
   }
@@ -311,7 +321,7 @@ export default function Karle() {
       if (!r.ok) throw new Error(`Test not found (${r.status})`)
       const d = await r.json()
       if (!d.questions?.length) throw new Error('No questions in test file')
-      const qs = d.questions
+      const qs = d.questions.map(normalizeQuestion)
       if (rd.cfg && d.pageImages) rd.cfg.pageImages = d.pageImages
 
       setQs(qs); setCfg(rd.cfg)
