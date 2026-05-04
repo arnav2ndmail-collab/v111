@@ -395,19 +395,29 @@ export default function Karle() {
     clearInterval(timerRef.current)
     const finalAns = cbtAns.current
     const elapsed = Math.round((Date.now()-startRef.current)/1000)
-    let cor=0,wrg=0,skp=0,un=0
+    let cor=0,wrg=0,skp=0,un=0,score=0,max=0
     const subjStats = {}
     finalAns.forEach((a,i) => {
       const q=Qs[i]; const ak=(q?.ans||'').toString().trim(); const subj=q?.subject||'Other'
-      if (!subjStats[subj]) subjStats[subj]={cor:0,wrg:0,skp:0,un:0}
+      const mCor=Number(q?.mCor ?? cfg.mCor ?? 3)
+      const mNeg=Number(q?.mNeg ?? cfg.mNeg ?? 1)
+      max += Number.isFinite(mCor) ? mCor : 3
+      if (!subjStats[subj]) subjStats[subj]={cor:0,wrg:0,skp:0,un:0,score:0,max:0}
+      subjStats[subj].max += Number.isFinite(mCor) ? mCor : 3
       if (!a){un++;subjStats[subj].un++;return}
       if (a==='skip'){skp++;subjStats[subj].skp++;return}
       const parts=ak.split(/\s+or\s+/i).map(s=>s.trim().toUpperCase())
-      if (parts.includes(a.toString().toUpperCase().trim())){cor++;subjStats[subj].cor++}
-      else{wrg++;subjStats[subj].wrg++}
+      if (parts.includes(a.toString().toUpperCase().trim())){
+        cor++;subjStats[subj].cor++;
+        score += Number.isFinite(mCor) ? mCor : 3
+        subjStats[subj].score += Number.isFinite(mCor) ? mCor : 3
+      }
+      else{
+        wrg++;subjStats[subj].wrg++;
+        score -= Number.isFinite(mNeg) ? mNeg : 1
+        subjStats[subj].score -= Number.isFinite(mNeg) ? mNeg : 1
+      }
     })
-    const score=cor*(cfg.mCor||3)-wrg*(cfg.mNeg||1)
-    const max=Qs.length*(cfg.mCor||3)
     const res={cor,wrg,skp,un,score,max,elapsed,pct:Math.round(cor/Qs.length*100),answers:finalAns,subjStats}
     setResult(res); setDone(true)
     clearResume()
