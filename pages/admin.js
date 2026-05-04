@@ -365,9 +365,10 @@ export default function AdminPage() {
   const [annLinkLabel, setAnnLinkLabel] = useState('')
   const [annActive, setAnnActive] = useState(false)
   // Scheduling
-  const [schedules, setSchedules]   = useState([])  // [{testPath, testTitle, releaseAt}]
-  const [schedFolders, setSchedFolders] = useState({}) // {folderName: [tests]}
+  const [schedules, setSchedules]   = useState([])
+  const [schedFolders, setSchedFolders] = useState({})
   const [schedOpenFolder, setSchedOpenFolder] = useState(null)
+  // Support links
 
   // BITSAT processor
   const [zipFile, setZipFile]     = useState(null)
@@ -418,6 +419,8 @@ export default function AdminPage() {
         setAnnLinkLabel(d.announcement.linkLabel||'')
         setAnnActive(true)
       }
+    } catch(e) {}
+    try {
     } catch(e) {}
     try {
       const r = await fetch('/api/admin/schedule')
@@ -575,7 +578,7 @@ export default function AdminPage() {
           </div>
           <nav className="sidebar-nav">
             {[
-              ['bitsat','📦','BITSAT ZIP'],
+              ['bitsat','📦','ZIP→JSON'],
               ['tests','📋','All Tests'],
               ['schedule','🗓️','Schedule'],
               ['exams','📅','Exam Dates'],

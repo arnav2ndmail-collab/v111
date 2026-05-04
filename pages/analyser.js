@@ -18,8 +18,12 @@ const Ic = {
   star:      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
 }
 
+<<<<<<< HEAD
 
 const SUBJ_ORDER = ['Physics','Chemistry','English & LR','Biology','Maths','Aptitude','Reasoning','General','Bonus']
+=======
+const SUBJ_ORDER = ['Physics','Chemistry','Maths','Biology','English & LR','Aptitude','Reasoning','General','Bonus']
+>>>>>>> 1b987bf (Update to TestZyro v7)
 const SC = {
   'Physics':      { bg:'#1565c0', grd:'linear-gradient(135deg,#1565c0,#1e88e5)', light:'#e3f2fd', dot:'#42a5f5', label:'PHY' },
   'Chemistry':    { bg:'#2e7d32', grd:'linear-gradient(135deg,#2e7d32,#43a047)', light:'#e8f5e9', dot:'#66bb6a', label:'CHEM' },
@@ -59,48 +63,100 @@ function fmtDate(iso) {
 // ── Smart Analysis Engine ──────────────────────────────────────────────────
 function analysePerformance(data, overall, subjects, getSubjQs, mCor, mNeg) {
   const insights = []
-  const accuracy = pct(overall.cor, overall.cor+overall.wrg)
-  const attemptRate = pct(overall.cor+overall.wrg+overall.skp, overall.total)
-  const timePerQ = data.duration ? Math.round(data.duration / overall.total) : 0
+  const accuracy   = pct(overall.cor, overall.cor + overall.wrg)
+  const attempted  = overall.cor + overall.wrg + overall.skp
+  const attemptRate = pct(attempted, overall.total)
+  const timePerQ   = data.duration && overall.total ? Math.round(data.duration / overall.total) : 0
+  const score      = overall.cor * mCor - overall.wrg * mNeg
+  const maxScore   = overall.total * mCor
+  const scorePct   = pct(score, maxScore)
+  const negLost    = overall.wrg * mNeg
+  const negRate    = pct(overall.wrg, attempted) // wrong out of attempted
 
-  // Overall rating
-  if (accuracy >= 80) insights.push({ type:'good', text:`Outstanding accuracy of ${accuracy}% — you're well prepared!` })
-  else if (accuracy >= 60) insights.push({ type:'ok', text:`Good accuracy at ${accuracy}%. Focus on speed to attempt more.` })
-  else if (accuracy >= 40) insights.push({ type:'warn', text:`Accuracy at ${accuracy}% needs improvement. Prioritise concepts over quantity.` })
-  else insights.push({ type:'bad', text:`Low accuracy (${accuracy}%). Review fundamentals before attempting more mocks.` })
+  // ── 1. Score & Grade ────────────────────────────────────────────────────
+  if (scorePct >= 80)      insights.push({ type:'good', icon:'🏆', title:'Excellent Score', text:`${score}/${maxScore} (${scorePct}%) — top-tier performance. You're in a strong position for the exam.` })
+  else if (scorePct >= 65) insights.push({ type:'good', icon:'✅', title:'Good Score',      text:`${score}/${maxScore} (${scorePct}%) — solid performance. Consistent practice will push you to the 80%+ bracket.` })
+  else if (scorePct >= 45) insights.push({ type:'ok',   icon:'📈', title:'Average Score',  text:`${score}/${maxScore} (${scorePct}%) — room to grow. Focus on accuracy over speed to significantly improve.` })
+  else                     insights.push({ type:'bad',  icon:'📉', title:'Low Score',      text:`${score}/${maxScore} (${scorePct}%) — needs serious improvement. Start with concept revision before attempting more mocks.` })
 
-  // Attempt rate
-  if (attemptRate < 70) insights.push({ type:'warn', text:`Only ${attemptRate}% questions attempted. In BITSAT every unattempted = 0, so attempt more.` })
-  else if (attemptRate >= 95) insights.push({ type:'good', text:`Excellent attempt rate of ${attemptRate}%! Great time management.` })
+  // ── 2. Accuracy analysis ────────────────────────────────────────────────
+  if (accuracy >= 85)      insights.push({ type:'good', icon:'🎯', title:'High Accuracy',  text:`${accuracy}% accuracy — very precise. You rarely guess. This is your biggest strength to protect.` })
+  else if (accuracy >= 70) insights.push({ type:'ok',   icon:'🎯', title:'Good Accuracy',  text:`${accuracy}% accuracy is decent. Eliminating 1 wrong answer in every 5 could add ~${Math.round(overall.wrg*0.2)*mCor + Math.round(overall.wrg*0.2)*mNeg} marks.` })
+  else if (accuracy >= 50) insights.push({ type:'warn', icon:'⚠️', title:'Accuracy Issue',  text:`Only ${accuracy}% accuracy. You're losing ${negLost} marks to negatives. Guessing less will immediately improve your score.` })
+  else                     insights.push({ type:'bad',  icon:'🚨', title:'Poor Accuracy',  text:`${accuracy}% accuracy — high guessing rate. If you'd skipped your wrong answers instead, your score would be +${negLost} marks higher.` })
 
-  // Worst subject
+  // ── 3. Attempt rate ─────────────────────────────────────────────────────
+  if (attemptRate < 60)    insights.push({ type:'bad',  icon:'⏱️', title:'Low Attempt Rate', text:`Only ${attemptRate}% attempted (${attempted}/${overall.total}). ${overall.total - attempted} unattempted questions = pure 0s. Work on time management urgently.` })
+  else if (attemptRate < 80) insights.push({ type:'warn', icon:'⏱️', title:'Attempt Rate',  text:`${attemptRate}% attempted. Leaving ${overall.total - attempted} questions blank. Try spending max 90s per question, then skip and return.` })
+  else if (attemptRate >= 95) insights.push({ type:'good', icon:'⚡', title:'Full Attempt',  text:`${attemptRate}% attempt rate — excellent coverage. You're not leaving easy marks on the table.` })
+
+  // ── 4. Negative marking strategy ────────────────────────────────────────
+  if (negRate > 35)        insights.push({ type:'bad',  icon:'📛', title:'Negative Trap',  text:`${negRate}% of your attempts were wrong. You lost ${negLost} marks. Strategy: if you can't eliminate at least 2 options, skip the question.` })
+  else if (negRate > 20)   insights.push({ type:'warn', icon:'🔴', title:'High Negatives', text:`Lost ${negLost} marks to wrong answers (${overall.wrg} wrong). Reducing wrong answers by half would gain you ${Math.round(overall.wrg/2)*(mCor+mNeg)} marks.` })
+  else if (negRate < 10 && overall.wrg > 0) insights.push({ type:'good', icon:'🛡️', title:'Smart Risk Taker', text:`Only ${negRate}% wrong rate — you attempt confidently and are mostly right. Very efficient answering style.` })
+
+  // ── 5. Subject-wise deep analysis ───────────────────────────────────────
   const subjScores = subjects.map(s => {
-    const st = getSubjQs(s)
-    const qs = Array.isArray(st) ? st : []
-    const cor = qs.filter(q=>q.result==='correct').length
-    const wrg = qs.filter(q=>q.result==='wrong').length
-    return { s, acc: pct(cor, cor+wrg), total: qs.length, cor, wrg }
-  }).filter(x => x.cor+x.wrg > 0)
+    const qs = getSubjQs(s)
+    const cor = qs.filter(q => q.result === 'correct').length
+    const wrg = qs.filter(q => q.result === 'wrong').length
+    const skp = qs.filter(q => q.result === 'skipped').length
+    const un  = qs.filter(q => q.result === 'unattempted').length
+    const sc  = cor * mCor - wrg * mNeg
+    const maxSc = qs.length * mCor
+    return { s, cor, wrg, skp, un, total: qs.length, acc: pct(cor, cor+wrg), sc, maxSc, scorePct: pct(sc, maxSc) }
+  }).filter(x => x.total > 0)
 
   if (subjScores.length > 1) {
-    const worst = subjScores.reduce((a,b) => a.acc < b.acc ? a : b)
-    const best  = subjScores.reduce((a,b) => a.acc > b.acc ? a : b)
-    insights.push({ type:'warn', text:`Weakest subject: ${worst.s} (${worst.acc}% accuracy). Dedicate extra revision time here.` })
-    if (best.acc >= 70) insights.push({ type:'good', text:`Strongest subject: ${best.s} (${best.acc}% accuracy). Keep it up!` })
+    const sorted = [...subjScores].sort((a,b) => a.scorePct - b.scorePct)
+    const worst  = sorted[0]
+    const best   = sorted[sorted.length - 1]
+    const avg    = Math.round(subjScores.reduce((s,x) => s + x.scorePct, 0) / subjScores.length)
+
+    // Weakest subject
+    if (worst.scorePct < 40)
+      insights.push({ type:'bad',  icon:'📚', title:`${worst.s} — Critical Weakness`, text:`Only ${worst.scorePct}% score in ${worst.s} (${worst.cor}✓ ${worst.wrg}✗). This one subject is pulling your rank down the most. Daily revision needed.` })
+    else if (worst.scorePct < 60)
+      insights.push({ type:'warn', icon:'📖', title:`${worst.s} — Needs Work`,         text:`${worst.scorePct}% in ${worst.s}. ${worst.total - worst.cor - worst.wrg} questions were unattempted — concept gaps likely. Revisit chapter-wise.` })
+
+    // Strongest subject
+    if (best.scorePct >= 80)
+      insights.push({ type:'good', icon:'⭐', title:`${best.s} — Your Strength`,       text:`${best.scorePct}% in ${best.s} — consistently strong. Maintain this and use the saved time to boost weaker subjects.` })
+
+    // Consistency
+    const spread = best.scorePct - worst.scorePct
+    if (spread > 50)
+      insights.push({ type:'warn', icon:'📊', title:'Uneven Performance',              text:`${spread}% gap between your best (${best.s}: ${best.scorePct}%) and worst (${worst.s}: ${worst.scorePct}%) subject. A balanced score in all subjects maximises rank.` })
+    else if (spread < 20 && avg >= 60)
+      insights.push({ type:'good', icon:'⚖️', title:'Well-Rounded',                    text:`Only ${spread}% gap across subjects — very consistent! Average ${avg}% across all. This is what toppers look like.` })
+
+    // Skipping pattern
+    const highSkippers = subjScores.filter(x => pct(x.skp + x.un, x.total) > 30)
+    if (highSkippers.length)
+      insights.push({ type:'warn', icon:'🔍', title:'Skipping Pattern',                text:`You skipped/left >30% in ${highSkippers.map(x=>x.s).join(', ')}. This suggests time pressure or concept gaps — identify which.` })
   }
 
-  // Negative marking analysis
-  const negMarks = overall.wrg * mNeg
-  if (negMarks > 10) insights.push({ type:'warn', text:`Lost ${negMarks} marks from wrong answers. Consider skipping uncertain questions.` })
-
-  // Time analysis
+  // ── 6. Time management ──────────────────────────────────────────────────
   if (timePerQ > 0) {
-    if (timePerQ < 50) insights.push({ type:'good', text:`Fast pace: ~${timePerQ}s per question. Good time management for BITSAT.` })
-    else if (timePerQ > 90) insights.push({ type:'warn', text:`Slow pace: ~${timePerQ}s/question. BITSAT needs ~54s/q. Practice speed.` })
+    const examTime = 180 // minutes
+    const targetPerQ = Math.round(examTime * 60 / overall.total)
+    if (timePerQ > targetPerQ * 1.4)
+      insights.push({ type:'warn', icon:'🐢', title:'Slow Pace',  text:`~${timePerQ}s/question (target: ~${targetPerQ}s). You ran out of time and left questions unanswered. Practice with a strict timer.` })
+    else if (timePerQ < targetPerQ * 0.6)
+      insights.push({ type:'ok',   icon:'🐇', title:'Very Fast',  text:`~${timePerQ}s/question — very fast. Make sure you're reading questions fully before answering.` })
+    else
+      insights.push({ type:'good', icon:'⏰', title:'Good Pace',  text:`~${timePerQ}s/question — right on target. Time management is solid.` })
+  }
+
+  // ── 7. Potential score (if wrong answers were skipped) ──────────────────
+  if (overall.wrg > 5) {
+    const potentialGain = Math.round(overall.wrg * 0.5) * (mCor + mNeg)
+    insights.push({ type:'ok', icon:'💡', title:'Potential Score', text:`If you'd skipped just half your wrong answers, you'd score +${potentialGain} marks. Target: identify "unsure" questions and skip them.` })
   }
 
   return insights
 }
+
 
 export default function Analyser() {
   const [data, setData]         = useState(null)
@@ -416,12 +472,15 @@ export default function Analyser() {
           {/* Smart Insights */}
           {insights.length>0&&(
             <div className="insights-card">
-              <div className="ic-title">{Ic.bolt} Smart Insights</div>
+              <div className="ic-title">{Ic.bolt} Smart Insights <span style={{fontSize:'.7rem',fontWeight:500,color:'#94a3b8',marginLeft:6}}>{insights.length} observations</span></div>
               <div className="ic-list">
                 {insights.map((ins,i)=>(
                   <div key={i} className={`insight ins-${ins.type}`}>
-                    <div className="ins-dot"/>
-                    <span>{ins.text}</span>
+                    <span className="ins-emoji">{ins.icon}</span>
+                    <div style={{flex:1}}>
+                      {ins.title && <div className="ins-title">{ins.title}</div>}
+                      <span className="ins-text">{ins.text}</span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -719,15 +778,17 @@ const APP_CSS = `
 .hstat-n{font-family:'JetBrains Mono',monospace;font-size:1.9rem;font-weight:900;line-height:1;margin-bottom:4px}
 .hstat-l{font-size:.6rem;color:#6b7280;text-transform:uppercase;letter-spacing:.5px}
 /* Insights */
-.insights-card{background:white;border:1px solid #e0e4ff;border-radius:14px;padding:18px 20px;margin-bottom:24px}
-.ic-title{display:flex;align-items:center;gap:7px;font-size:.72rem;font-weight:800;color:#1a237e;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:14px;font-family:'JetBrains Mono',monospace}
+.insights-card{background:white;border:1px solid #e0e4ff;border-radius:16px;padding:20px 22px;margin-bottom:24px;box-shadow:0 2px 12px rgba(26,35,126,.06)}
+.ic-title{display:flex;align-items:center;gap:7px;font-size:.72rem;font-weight:800;color:#1a237e;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:16px;font-family:'JetBrains Mono',monospace}
 .ic-list{display:flex;flex-direction:column;gap:8px}
-.insight{display:flex;align-items:flex-start;gap:10px;font-size:.82rem;padding:8px 12px;border-radius:8px;line-height:1.5}
-.ins-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px}
-.ins-good{background:#e8f5e9;color:#2e7d32}.ins-good .ins-dot{background:#2e7d32}
-.ins-ok{background:#e3f2fd;color:#1565c0}.ins-ok .ins-dot{background:#1565c0}
-.ins-warn{background:#fff8e1;color:#e65100}.ins-warn .ins-dot{background:#e65100}
-.ins-bad{background:#ffebee;color:#c62828}.ins-bad .ins-dot{background:#c62828}
+.insight{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-radius:11px;line-height:1.5;border:1px solid transparent}
+.ins-emoji{font-size:1.1rem;flex-shrink:0;margin-top:1px}
+.ins-title{font-size:.78rem;font-weight:800;margin-bottom:2px}
+.ins-text{font-size:.78rem;line-height:1.6;opacity:.9}
+.ins-good{background:#f0fdf4;border-color:#bbf7d0;color:#166534}
+.ins-ok{background:#eff6ff;border-color:#bfdbfe;color:#1e40af}
+.ins-warn{background:#fffbeb;border-color:#fde68a;color:#92400e}
+.ins-bad{background:#fff1f2;border-color:#fecdd3;color:#9f1239}
 /* Subject cards */
 .scard-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin-bottom:28px}
 .scard{background:white;border-radius:14px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.06);cursor:pointer;transition:all .2s;border:1px solid #e8eaf6}

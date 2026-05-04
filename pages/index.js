@@ -85,6 +85,7 @@ export default function Karle() {
   const [globalStats, setGlobalStats] = useState({ totalAttempts: 0 })
   const [exams, setExams]            = useState([])
   const [announcement, setAnnouncement] = useState(null)
+  const [testCounts, setTestCounts]  = useState({})
   useEffect(()=>{
     fetch('/api/admin/schedule').then(r=>r.ok?r.json():[]).then(setSchedules).catch(()=>{})
   },[])
@@ -106,6 +107,7 @@ export default function Karle() {
     fetch('/api/site-stats').then(r=>r.ok?r.json():null).then(d=>{
       if(d){ setGlobalStats({ totalAttempts: d.totalAttempts||0 }); setExams(d.exams||[]); setAnnouncement(d.announcement||null) }
     }).catch(()=>{})
+    fetch('/api/test-attempt-counts').then(r=>r.ok?r.json():{}).then(setTestCounts).catch(()=>{})
     // Check Supabase session + load cloud attempts + bookmarks
     if (isSupabaseReady()) {
       getSupabase().auth.getSession().then(async ({ data }) => {
@@ -686,6 +688,8 @@ export default function Karle() {
             <div className="trow-title">{t.title}</div>
             <div className="trow-meta">
               {t.subject||'Exam'} · {t.questionCount||t.questions?.length||'?'} Questions · +{t.mCor||3}/−{t.mNeg||1} · {t.dur||180} min
+              {(()=>{const cnt=testCounts[t.path]||testCounts[t.id]||testCounts[t.path?.replace('__storage__','')]||0;return cnt>0?<span className="trow-attempts-badge">👥 {cnt} attempt{cnt!==1?'s':''}</span>:null})()}
+            </div>
               {t.hasBonus && <span className="trow-bonus">Bonus</span>}
             </div>
             {isLocked && (
@@ -1366,6 +1370,7 @@ body{background:#0a0e1a;color:#f1f5f9;font-family:'Inter',sans-serif;min-height:
 .trow-title{font-weight:600;font-size:.92rem;color:#f1f5f9;margin-bottom:4px}
 .trow-meta{font-size:.72rem;color:#64748b;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .trow-bonus{background:rgba(249,115,22,.15);color:#f97316;border:1px solid rgba(249,115,22,.3);padding:1px 7px;border-radius:10px;font-size:.6rem;font-weight:700}
+.trow-attempts-badge{display:inline-flex;align-items:center;gap:3px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.2);color:#818cf8;padding:1px 8px;border-radius:10px;font-size:.62rem;font-weight:600}
 .trow-att-row{display:flex;align-items:center;gap:6px;margin-top:5px;font-size:.72rem;flex-wrap:wrap}
 .trow-att-sep,.trow-att-acc,.trow-att-date{color:#475569}
 .trow-att-score{font-weight:700}

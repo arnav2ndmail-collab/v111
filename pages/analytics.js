@@ -110,7 +110,10 @@ export default function Analytics() {
   const allSubjKeys = [...new Set(filtered.flatMap(a => Object.keys(a.subj_stats || {})))]
   const SUBJECTS = ['Overall', ...SUBJ_ORDER_KNOWN.filter(s=>allSubjKeys.includes(s)), ...allSubjKeys.filter(s=>!SUBJ_ORDER_KNOWN.includes(s))]
 
+<<<<<<< HEAD
   // ── FIX: was missing "const stats =" ──────────────────────────────────────
+=======
+>>>>>>> 1b987bf (Update to TestZyro v7)
   const stats = (() => {
     if (!filtered.length) return null
     const n = filtered.length
