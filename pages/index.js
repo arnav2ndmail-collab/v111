@@ -691,7 +691,6 @@ export default function Karle() {
               {(()=>{const cnt=testCounts[t.path]||testCounts[t.id]||testCounts[t.path?.replace('__storage__','')]||0;return cnt>0?<span className="trow-attempts-badge">👥 {cnt} attempt{cnt!==1?'s':''}</span>:null})()}
             </div>
               {t.hasBonus && <span className="trow-bonus">Bonus</span>}
-            </div>
             {isLocked && (
               <div style={{marginTop:4,fontSize:'.7rem',color:'#f59e0b',fontWeight:600,display:'flex',alignItems:'center',gap:4}}>
                 🔒 Releasing: {releaseLabel}

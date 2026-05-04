@@ -18,12 +18,7 @@ const Ic = {
   star:      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
 }
 
-<<<<<<< HEAD
-
 const SUBJ_ORDER = ['Physics','Chemistry','English & LR','Biology','Maths','Aptitude','Reasoning','General','Bonus']
-=======
-const SUBJ_ORDER = ['Physics','Chemistry','Maths','Biology','English & LR','Aptitude','Reasoning','General','Bonus']
->>>>>>> 1b987bf (Update to TestZyro v7)
 const SC = {
   'Physics':      { bg:'#1565c0', grd:'linear-gradient(135deg,#1565c0,#1e88e5)', light:'#e3f2fd', dot:'#42a5f5', label:'PHY' },
   'Chemistry':    { bg:'#2e7d32', grd:'linear-gradient(135deg,#2e7d32,#43a047)', light:'#e8f5e9', dot:'#66bb6a', label:'CHEM' },
